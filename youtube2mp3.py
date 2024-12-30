@@ -1,144 +1,102 @@
-from google.colab import drive
-import yt_dlp as youtube_dl
+import yt_dlp
 import os
 import subprocess
 
-class Youtube2Mp3:
+class YoutubeSegmentDownloader:
+    SEGMENT_DURATION = 30 * 60  # 30 minutes in seconds
+
     def __init__(self):
-        # Mount Google Drive
-        drive.mount('/content/drive')
-        self.drive_path = "/content/drive/MyDrive/"  # Path to save files in Google Drive
+        """Initialize the downloader."""
+        self.download_path = "./downloads"  # Folder to save downloaded videos
 
-    def youtube_download(self):
-        """Download a file as mp3 or mp4 by providing the Youtube link"""
-        print("Select format: \n1 for MP3 \n2 for MP4")
-        choice = input("").strip()
+    def get_video_duration(self, video_url):
+        """Retrieve the video duration in seconds."""
+        with yt_dlp.YoutubeDL({'quiet': True}) as ydl:
+            result = ydl.extract_info(video_url, download=False)
+            return result['duration']  # Returns duration in seconds
 
-        if choice == "1":
-            format_type = "mp3"
-            ydl_opts = {
-                'format': 'bestaudio/best',
-                'postprocessors': [{
-                    'key': 'FFmpegExtractAudio',
-                    'preferredcodec': 'mp3',
-                    'preferredquality': '320',
-                }],
-                'outtmpl': os.path.join(self.drive_path, '%(title)s.%(ext)s'),  # Save to Google Drive
-            }
-        elif choice == "2":
-            format_type = "mp4"
-            ydl_opts = {
-                'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-                'merge_output_format': 'mp4',
-                'outtmpl': os.path.join(self.drive_path, '%(title)s.%(ext)s'),  # Save to Google Drive
-            }
-        else:
-            print("Invalid input. Aborting.")
-            return
+    def download_video(self, video_url, segment_filename):
+        """Download the whole video."""
+        # Get video info to determine video title
+        with yt_dlp.YoutubeDL({'quiet': True}) as ydl:
+            video_info = ydl.extract_info(video_url, download=False)
+            video_title = video_info['title']
+        
+        video_filename = f"{segment_filename}.mp4"
+        video_filepath = os.path.join(self.download_path, video_filename)
 
-        print("Insert the link")
-        link = input("").strip()
+        # Ensure download path exists
+        if not os.path.exists(self.download_path):
+            os.makedirs(self.download_path)
 
+        # yt-dlp options for downloading the video
+        ydl_opts = {
+            'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]',
+            'outtmpl': video_filepath,
+            'quiet': False,
+            'noplaylist': True  # Avoid downloading playlists
+        }
+
+        # Download the full video
         try:
-            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([link])
-            print(f"Download as {format_type} complete.")
-
-            # Rename the file before splitting and get the new filename
-            new_filename = self.rename_most_recent_file(format_type)
-
-            # Check if the downloaded video is larger than 500 MB and split if necessary
-            # self.split_video_if_large(new_filename)
-
+            print(f"Downloading the entire video: {video_title}")
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([video_url])
+            print(f"Video downloaded successfully: {video_filename}")
+            return video_filepath
         except Exception as e:
-            print(f"An error occurred: {e}")
-
-    def rename_most_recent_file(self, format_type):
-        """Find the most recent file and rename it with the user's input, then return the new file name"""
-        # List all files in the Google Drive folder
-        files = [f for f in os.listdir(self.drive_path) if f.endswith(('.mp4', '.mp3'))]
-
-        if files:
-            # Get the most recently modified file
-            most_recent_file = max(files, key=lambda f: os.path.getmtime(os.path.join(self.drive_path, f)))
-
-            # Prompt user for the new name (without extension)
-            print(f"The most recent file is: {most_recent_file}")
-            new_name = input("Enter a new name for the file (without extension): ").strip()
-
-            # Construct the new file name with the correct extension
-            new_filename = f"{new_name}.{format_type}"
-            old_path = os.path.join(self.drive_path, most_recent_file)
-            new_path = os.path.join(self.drive_path, new_filename)
-
-            # Rename the most recent file to the new filename
-            os.rename(old_path, new_path)
-            print(f"File renamed to: {new_filename}")
-
-            return new_filename
-        else:
-            print("No files found to rename.")
+            print(f"Failed to download the video: {e}")
             return None
 
-    def split_video_if_large(self, new_filename):
-        """Split the video into parts if the file size is larger than 500 MB"""
-        if new_filename:
-            file_path = os.path.join(self.drive_path, new_filename)
-            file_size = os.path.getsize(file_path)
-            file_size_mb = file_size / (1024 * 1024)
+    def split_video_into_segments(self, video_filepath, segment_filename, duration):
+        """Split the video into 30-minute segments using ffmpeg."""
+        num_segments = (duration // self.SEGMENT_DURATION) + (1 if duration % self.SEGMENT_DURATION > 0 else 0)
+        print(f"Video Duration: {duration} seconds")
+        print(f"Total Segments: {num_segments}")
+        print(f"Segments will be saved in {self.download_path} with the base name '{segment_filename}'.")
 
-            print(f"File: {new_filename}, Size: {file_size_mb:.2f} MB")
+        # Split the video into segments
+        for i in range(num_segments):
+            start_time = i * self.SEGMENT_DURATION
+            end_time = min((i + 1) * self.SEGMENT_DURATION, duration)
+            segment_name = f"{segment_filename}_{i+1}.mp4"
+            segment_filepath = os.path.join(self.download_path, segment_name)
 
-            if file_size_mb > 500:
-                print(f"Splitting {new_filename} into parts of 500 MB...")
+            print(f"Splitting Segment {i+1}: {start_time}s to {end_time}s")
 
-                # Calculate segment duration in seconds
-                total_duration = self.get_video_duration(file_path)
-                segment_duration = int(total_duration / (file_size_mb / 500))
+            # Use ffmpeg to split the video into segments
+            command = [
+                "ffmpeg", "-i", video_filepath, "-ss", str(start_time), "-to", str(end_time),
+                "-c", "copy", "-copyts", segment_filepath
+            ]
 
-                base_name = new_filename.rsplit('.', 1)[0]
-                output_pattern = os.path.join(self.drive_path, f"{base_name}_%03d.mp4")
-
-                # Use FFmpeg to split the video
-                command = [
-                    'ffmpeg', '-i', file_path,
-                    '-c', 'copy', '-map', '0',
-                    '-segment_time', str(segment_duration),
-                    '-f', 'segment', output_pattern
-                ]
+            
+            try:
                 subprocess.run(command, check=True)
+                print(f"Segment {i+1} saved as {segment_name}")
+            except subprocess.CalledProcessError as e:
+                print(f"Error splitting segment {i+1}: {e}")
 
-                os.remove(file_path)  # Remove the original large file
+    def download_and_split(self, video_url, segment_filename):
+        """Download the video and then split it into segments."""
+        # Step 1: Download the entire video
+        video_filepath = self.download_video(video_url, segment_filename)
+        if video_filepath is None:
+            return
 
-                # Print the names of the split files
-                split_files = [f for f in os.listdir(self.drive_path) if f.startswith(base_name) and f.endswith(".mp4")]
-                split_files.sort()  # Ensure files are in order
-                for idx, split_file in enumerate(split_files, 1):
-                    print(f"Part {idx}: {split_file}")
+        # Step 2: Get video duration
+        duration = self.get_video_duration(video_url)
 
-            else:
-                print(f"File {new_filename} is small enough and doesn't need to be split.")
-        else:
-            print("No file to split.")
-
-    def get_video_duration(self, file_path):
-        """Get the duration of a video file in seconds using ffprobe."""
-        try:
-            result = subprocess.run(
-                [
-                    'ffprobe', '-v', 'error', '-show_entries',
-                    'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', file_path
-                ],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                check=True
-            )
-            return float(result.stdout.strip())
-        except subprocess.CalledProcessError as e:
-            print(f"Error getting video duration: {e}")
-            return 0
+        # Step 3: Split the video into segments
+        self.split_video_into_segments(video_filepath, segment_filename, duration)
 
 if __name__ == "__main__":
-    yt = Youtube2Mp3()
-    yt.youtube_download()
+    # Initialize the downloader class
+    downloader = YoutubeSegmentDownloader()
+
+    # Prompt user for YouTube link and file name
+    video_url = input("Enter the YouTube link: ").strip()
+    segment_filename = input("Enter a base name for the segment files (e.g., 'myVideo'): ").strip()
+
+    # Download and split the video into segments
+    downloader.download_and_split(video_url, segment_filename)
