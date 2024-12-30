@@ -1,10 +1,9 @@
-from __future__ import unicode_literals
 import yt_dlp as youtube_dl
 import os
-import shutil
+import time
+import subprocess
 
 class Youtube2Mp3:
-
     def __init__(self):
         pass
 
@@ -41,82 +40,105 @@ class Youtube2Mp3:
         try:
             with youtube_dl.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([link])
-            
             print(f"Download as {format_type} complete.")
 
-            # Clean up non-MP4 files
-            self.cleanup_files()
+            # Rename the file before splitting and get the new filename
+            new_filename = self.rename_most_recent_file(format_type)
 
-            # Check the size of the downloaded MP4 file
-            filename = self.get_latest_downloaded_file()
-
-            # If the file is larger than 500MB, split it
-            if os.path.getsize(filename) > 500 * 1024 * 1024:  # 500MB in bytes
-                self.split_video(filename)
+            # Check if the downloaded video is larger than 500 MB and split if necessary
+            self.split_video_if_large(new_filename)
 
         except Exception as e:
             print(f"An error occurred: {e}")
 
-    def get_latest_downloaded_file(self):
-        """Get the most recently downloaded file in the current directory"""
-        files = os.listdir()
-        files = [f for f in files if f.endswith('.mp4') or f.endswith('.m4a')]
-        latest_file = max(files, key=os.path.getctime)
-        return latest_file
+    def rename_most_recent_file(self, format_type):
+        """Find the most recent file and rename it with the user's input, then return the new file name"""
+        # Get the current working directory
+        current_dir = os.getcwd()
 
-    def cleanup_files(self):
-        """Remove non-MP4 files and intermediate files"""
-        for filename in os.listdir():
-            if filename.endswith(".m4a") or filename.endswith(".f401") or filename.endswith(".f140"):
-                try:
-                    os.remove(filename)
-                    print(f"Removed file: {filename}")
-                except Exception as e:
-                    print(f"Error removing file {filename}: {e}")
-
-    def split_video(self, filename):
-        """Split the video into smaller parts if it exceeds 500MB"""
-        import subprocess
-
-        # Get the base name (without extension)
-        base_filename = os.path.splitext(filename)[0]
-
-        # Split the video into 500MB segments using ffmpeg
-        output_pattern = f"{base_filename}_part_%03d.mp4"
-        command = [
-            "ffmpeg", "-i", filename, "-c", "copy", "-map", "0",
-            "-f", "segment", "-segment_size", str(500 * 1024 * 1024),  # 500MB
-            output_pattern
-        ]
+        # List all files in the directory, filtering for mp4 or mp3 files
+        files = [f for f in os.listdir(current_dir) if f.endswith(('.mp4', '.mp3'))]
         
-        try:
-            subprocess.run(command, check=True)
-            print(f"Video split into smaller parts: {base_filename}_part_001.mp4, etc.")
-            # Remove the original large file after splitting
-            os.remove(filename)
-            print(f"Original file {filename} removed.")
-        except subprocess.CalledProcessError as e:
-            print(f"Error splitting video: {e}")
+        if files:
+            # Get the most recently modified file
+            most_recent_file = max(files, key=lambda f: os.path.getmtime(f))
 
-    def calculate_total_music_duration(self, directory):
-        """Calculate total duration of all mp3 files in a directory and print in hours, minutes, and seconds"""
-        total_duration = 0  # total duration in seconds
+            # Prompt user for the new name (without extension)
+            print(f"The most recent file is: {most_recent_file}")
+            new_name = input("Enter a new name for the file (without extension): ").strip()
 
-        # Iterate over all files in the directory
-        for filename in os.listdir(directory):
-            if filename.endswith(".mp3"):
-                file_path = os.path.join(directory, filename)
-                
-                # Use mutagen to get the duration of the mp3 file
-                audio = MP3(file_path)
-                total_duration += audio.info.length
+            # Construct the new file name with the correct extension
+            new_filename = f"{new_name}.{format_type}"
 
-        # Convert total seconds to hours, minutes, and seconds
-        hours, remainder = divmod(total_duration, 3600)
-        minutes, seconds = divmod(remainder, 60)
+            # Rename the most recent file to the new filename
+            os.rename(most_recent_file, new_filename)
+            print(f"File renamed to: {new_filename}")
 
-        print(f"Total music duration in {directory}: \t\t{int(hours)} hours, {int(minutes)} minutes, {int(seconds)} seconds")
-        return total_duration
+            return new_filename
+        else:
+            print("No files found to rename.")
+            return None
+
+    def split_video_if_large(self, new_filename):
+      """Split the video into parts if the file size is larger than 500 MB"""
+      if new_filename:
+          current_dir = os.getcwd()
+          file_path = os.path.join(current_dir, new_filename)
+          file_size = os.path.getsize(file_path)
+          file_size_mb = file_size / (1024 * 1024)
+
+          print(f"File: {new_filename}, Size: {file_size_mb:.2f} MB")
+
+          if file_size_mb > 500:
+              print(f"Splitting {new_filename} into parts of 500 MB...")
+
+              # Calculate segment duration in seconds
+              total_duration = self.get_video_duration(file_path)
+              segment_duration = int(total_duration / (file_size_mb / 500))
+
+              base_name = new_filename.rsplit('.', 1)[0]
+              output_pattern = os.path.join(current_dir, f"{base_name}_%03d.mp4")
+
+              # Use FFmpeg to split the video
+              command = [
+                  'ffmpeg', '-i', file_path,
+                  '-c', 'copy', '-map', '0',
+                  '-segment_time', str(segment_duration),
+                  '-f', 'segment', output_pattern
+              ]
+              subprocess.run(command, check=True)
+
+              os.remove(file_path)  # Remove the original large file
+
+              # Print the names of the split files
+              split_files = [f for f in os.listdir(current_dir) if f.startswith(base_name) and f.endswith(".mp4")]
+              split_files.sort()  # Ensure files are in order
+              for idx, split_file in enumerate(split_files, 1):
+                  print(f"Part {idx}: {split_file}")
+
+          else:
+              print(f"File {new_filename} is small enough and doesn't need to be split.")
+      else:
+          print("No file to split.")
+
+    def get_video_duration(self, file_path):
+      """Get the duration of a video file in seconds using ffprobe."""
+      try:
+          result = subprocess.run(
+              [
+                  'ffprobe', '-v', 'error', '-show_entries',
+                  'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', file_path
+              ],
+              stdout=subprocess.PIPE,
+              stderr=subprocess.PIPE,
+              text=True,
+              check=True
+          )
+          return float(result.stdout.strip())
+      except subprocess.CalledProcessError as e:
+          print(f"Error getting video duration: {e}")
+          return 0
+
 
 
 if __name__ == "__main__":
