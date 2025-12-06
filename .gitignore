@@ -1,3 +1,7 @@
 *.mp3
 *.jpeg
 *.jpg 
+
+*.vscode
+*.pyc
+*__pycache__
