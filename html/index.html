@@ -4,70 +4,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>YouTube Downloader</title>
 <style>
-    body {
-        font-family: Arial, sans-serif;
-        margin: 10px;
-        padding: 0;
-        display: flex;
-        justify-content: center;
-        background-color: #f2f2f2;
-    }
-    .container {
-        width: 100%;
-        max-width: 500px;
-        background: #fff;
-        padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    h2 {
-        text-align: center;
-        margin-bottom: 20px;
-    }
-    form {
-        margin-bottom: 20px;
-    }
-    input[type="text"] {
-        width: 100%;
-        padding: 12px;
-        margin-bottom: 10px;
-        border-radius: 8px;
-        border: 1px solid #ccc;
-        font-size: 16px;
-        box-sizing: border-box;
-    }
-    input[type="submit"] {
-        width: 100%;
-        padding: 12px;
-        font-size: 16px;
-        border-radius: 8px;
-        border: none;
-        background-color: #007bff;
-        color: white;
-        cursor: pointer;
-    }
-    input[type="submit"]:hover {
-        background-color: #0056b3;
-    }
-    .message {
-        margin-bottom: 20px;
-        color: green;
-        text-align: center;
-        word-wrap: break-word;
-    }
-    .file-list {
-        margin-top: 10px;
-    }
-    .file-item {
-        margin-bottom: 20px;
-        word-wrap: break-word;
-    }
-    video {
-        width: 100%;
-        border-radius: 8px;
-        margin-top: 5px;
-        max-height: 300px;
-    }
+    body { font-family: Arial; margin: 10px; padding: 0; display: flex; justify-content: center; background-color: #f2f2f2; }
+    .container { width: 100%; max-width: 500px; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    h2 { text-align: center; margin-bottom: 20px; }
+    input[type="text"] { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; box-sizing: border-box; }
+    input[type="submit"] { width: 100%; padding: 12px; font-size: 16px; border-radius: 8px; border: none; background-color: #007bff; color: white; cursor: pointer; }
+    input[type="submit"]:hover { background-color: #0056b3; }
+    .message { margin-bottom: 20px; color: green; text-align: center; word-wrap: break-word; }
+    .file-list { margin-top: 10px; }
+    .file-item { margin-bottom: 10px; word-wrap: break-word; cursor: pointer; color: #007bff; }
+    .file-item:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -81,27 +27,36 @@
         <input type="submit" value="Download">
     </form>
 
-    <!-- Message -->
     <div class="message">{{ message|safe }}</div>
 
-    <!-- Search Form -->
-    <form method="get" action="/">
-        <input type="text" name="query" placeholder="Search downloaded videos" value="{{ query }}">
-        <input type="submit" value="Search">
-    </form>
-
-    <!-- List of videos -->
-    <div class="file-list">
+    <!-- Search -->
+    <input type="text" id="search" placeholder="Search downloaded videos" value="{{ query }}">
+    <div class="file-list" id="file-list">
         {% for file in files %}
-            <div class="file-item">
-                <strong>{{ file }}</strong><br>
-                <video controls playsinline preload="metadata">
-                    <source src="/video/{{ file | urlencode }}" type="video/mp4">
-                    Your browser does not support the video tag.
-                </video>
-            </div>
+            <div class="file-item" onclick="playVideo('{{ file }}')">{{ file }}</div>
         {% endfor %}
     </div>
 </div>
+
+<script>
+function playVideo(filename) {
+    // Open the video in a new window/tab
+    window.open(`/video/${encodeURIComponent(filename)}`, '_blank');
+}
+
+// Live search
+const searchInput = document.getElementById("search");
+searchInput.addEventListener("input", function() {
+    const query = this.value.toLowerCase();
+    const items = document.querySelectorAll(".file-item");
+    items.forEach(item => {
+        if (item.textContent.toLowerCase().includes(query)) {
+            item.style.display = "block";
+        } else {
+            item.style.display = "none";
+        }
+    });
+});
+</script>
 </body>
 </html>
