@@ -17,36 +17,33 @@ class YoutubeSegmentDownloader:
 
     def download_video(self, video_url, segment_filename):
         """Download the whole video."""
-        # Get video info to determine video title
-        with yt_dlp.YoutubeDL({'quiet': True}) as ydl:
-            video_info = ydl.extract_info(video_url, download=False)
-            video_title = video_info['title']
-        
-        video_filename = f"{segment_filename}.mp4"
-        video_filepath = os.path.join(self.download_path, video_filename)
-
         # Ensure download path exists
         if not os.path.exists(self.download_path):
             os.makedirs(self.download_path)
 
-        # yt-dlp options for downloading the video
+        video_filepath = os.path.join(self.download_path, f"{segment_filename}.mp4")
+
         ydl_opts = {
             'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]',
             'outtmpl': video_filepath,
+            'noplaylist': True,  # only single video
             'quiet': False,
-            'noplaylist': True  # Avoid downloading playlists
+            'extractor_args': {
+                'youtube': {'player_client': 'default'}  # explicitly use default client
+            },
+            'merge_output_format': 'mp4'  # ensures audio+video merged
         }
 
-        # Download the full video
         try:
-            print(f"Downloading the entire video: {video_title}")
+            print(f"Downloading video to: {video_filepath}")
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([video_url])
-            print(f"Video downloaded successfully: {video_filename}")
+            print("Download complete!")
             return video_filepath
         except Exception as e:
-            print(f"Failed to download the video: {e}")
+            print(f"Download failed: {e}")
             return None
+
 
     def split_video_into_segments(self, video_filepath, segment_filename, duration):
         """Split the video into 30-minute segments using ffmpeg."""

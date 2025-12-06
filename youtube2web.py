@@ -1,45 +1,42 @@
 from fastapi import FastAPI, Form
-from fastapi.responses import HTMLResponse, FileResponse
-import yt_dlp
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from fastapi.requests import Request
+from youtube2mp3 import YoutubeSegmentDownloader
 import os
 
 app = FastAPI()
 
-DOWNLOAD_FOLDER = "downloads"
+# Initialize the downloader
+downloader = YoutubeSegmentDownloader()
+DOWNLOAD_FOLDER = downloader.download_path
 os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 
+# Setup templates folder
+templates = Jinja2Templates(directory="html")
+
+
 @app.get("/", response_class=HTMLResponse)
-def index():
-    return """
-    <h2>YouTube Downloader</h2>
-    <form action="/download" method="post">
-        YouTube URL: <input type="text" name="link" size="50">
-        <input type="submit" value="Download">
-    </form>
-    """
+def index(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request, "message": ""})
 
-@app.post("/download")
-async def download(link: str = Form(...)):
-    ydl_opts = {
-        'format': 'bestaudio/best',
-        'outtmpl': os.path.join(DOWNLOAD_FOLDER, '%(title)s.%(ext)s')
-    }
 
+@app.post("/download", response_class=HTMLResponse)
+def download(request: Request, link: str = Form(...), filename: str = Form(...)):
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(link, download=True)
-            filename = ydl.prepare_filename(info)
-        return HTMLResponse(f"""
-            <p>Downloaded: {os.path.basename(filename)}</p>
-            <a href="/file/{os.path.basename(filename)}">Download File</a>
-            <br><a href="/">Download another</a>
-        """)
-    except Exception as e:
-        return HTMLResponse(f"<p>Error: {str(e)}</p><a href='/'>Back</a>")
+        print(f"Received download request for URL: {link} with filename: {filename}")
 
-@app.get("/file/{filename}")
-def serve_file(filename: str):
-    path = os.path.join(DOWNLOAD_FOLDER, filename)
-    if os.path.exists(path):
-        return FileResponse(path, media_type="application/octet-stream", filename=filename)
-    return HTMLResponse(f"<p>File not found</p><a href='/'>Back</a>")
+        # Call the actual download function (no splitting yet)
+        video_path = downloader.download_video(link, filename)
+
+        if video_path:
+            message = f"<p>Download complete: {os.path.basename(video_path)}</p>"
+        else:
+            message = "<p style='color:red'>Download failed. Check console for errors.</p>"
+
+        return templates.TemplateResponse("index.html", {"request": request, "message": message})
+
+    except Exception as e:
+        return templates.TemplateResponse(
+            "index.html", {"request": request, "message": f"<p style='color:red'>Error: {str(e)}</p>"}
+        )

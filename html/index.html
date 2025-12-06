@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YouTube Downloader</title>
+<style>
+    body { display: flex; justify-content: center; align-items: center; height: 100vh; font-family: Arial, sans-serif; background-color: #f2f2f2; }
+    .container { text-align: center; background: #fff; padding: 40px; border-radius: 12px; box-shadow: 0px 4px 12px rgba(0,0,0,0.1); width: 90%; max-width: 500px; }
+    input[type="text"] { width: 100%; padding: 15px; font-size: 18px; margin-bottom: 20px; border-radius: 8px; border: 1px solid #ccc; }
+    input[type="submit"] { padding: 15px 30px; font-size: 18px; background-color: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; }
+    input[type="submit"]:hover { background-color: #0056b3; }
+    a { display: block; margin-top: 15px; color: #007bff; }
+</style>
+</head>
+<body>
+<div class="container">
+    <h2>YouTube Downloader</h2>
+    <form action="/download" method="post">
+        <input type="text" name="link" placeholder="Enter YouTube URL" required>
+        <input type="text" name="filename" placeholder="File name (e.g., myVideo)" required>
+        <input type="submit" value="Download">
+    </form>
+    {{ message | safe }}
+</div>
+</body>
+</html>
