@@ -25,6 +25,29 @@ downloader.download_path = DOWNLOAD_FOLDER
 # Templates folder
 templates = Jinja2Templates(directory="html")
 
+def get_playlists_containing(filename: str):
+    matches = []
+
+    for f in os.listdir(PLAYLIST_FOLDER):
+        if not f.endswith(".json"):
+            continue
+
+        path = os.path.join(PLAYLIST_FOLDER, f)
+        try:
+            with open(path, "r") as fd:
+                data = json.load(fd)
+
+            songs = data.get("songs", [])
+            name = data.get("name", f[:-5])
+
+            if filename in songs:
+                matches.append(name)
+
+        except Exception as e:
+            print("Playlist read error:", e)
+
+    return matches
+
 # -----------------------------
 # Index / Menu page
 # -----------------------------
@@ -91,13 +114,18 @@ def files_page(request: Request, query: str = ""):
 
 @app.get("/video/{filename}", response_class=HTMLResponse)
 def video_page(request: Request, filename: str):
-    # Get all playlist names
-    playlists = [f.replace(".json", "") for f in os.listdir("playlists") if f.endswith(".json")]
-    
+
+    # All playlist names
+    playlists = [f[:-5] for f in os.listdir(PLAYLIST_FOLDER) if f.endswith(".json")]
+
+    # Playlists this file belongs to
+    file_playlists = get_playlists_containing(filename)
+
     return templates.TemplateResponse("video_detail.html", {
         "request": request,
         "filename": filename,
-        "playlists": playlists
+        "playlists": playlists,          # For dropdown
+        "file_playlists": file_playlists # For Belongs-to list
     })
 
 # -----------------------------

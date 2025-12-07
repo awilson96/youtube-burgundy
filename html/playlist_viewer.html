@@ -140,41 +140,69 @@ const showBtn = document.getElementById('show-dropdown-btn');
 const dropdown = document.getElementById('playlist-dropdown');
 const fileContainer = document.getElementById('playlist-files');
 
+/* ------------------------------
+   Show dropdown when button clicked
+--------------------------------*/
 showBtn.onclick = () => {
     dropdown.style.display = 'block';
     dropdown.focus();
 };
 
+/* ------------------------------
+   Load selected playlist manually
+--------------------------------*/
 dropdown.onchange = () => {
     const playlist = dropdown.value;
     if (!playlist) return;
 
-    fetch(`/playlist/files?name=${encodeURIComponent(playlist)}`)
+    loadPlaylist(playlist);
+
+    dropdown.style.display = 'none';
+    dropdown.selectedIndex = 0;
+};
+
+/* ------------------------------
+   Auto-load playlist from URL (?name=XYZ)
+--------------------------------*/
+const urlParams = new URLSearchParams(window.location.search);
+const preselect = urlParams.get("name");  // keep 'name' to match backend
+
+if (preselect) {
+    dropdown.value = preselect;
+    loadPlaylist(preselect);
+}
+
+/* ------------------------------
+   Fetch playlist files
+--------------------------------*/
+function loadPlaylist(playlist) {
+    fetch(`/playlist/files?name=${encodeURIComponent(playlist)}`) // keep 'name'
         .then(resp => resp.json())
         .then(data => {
             fileContainer.innerHTML = "";
+            fileContainer.style.display = "block";
+
             if (!data.songs || data.songs.length === 0) {
                 fileContainer.innerHTML = "<p>No files in this playlist.</p>";
-                fileContainer.style.display = 'block';
                 return;
             }
+
             data.songs.forEach(file => {
                 const div = document.createElement("div");
                 div.className = "file-item";
                 div.textContent = file;
-                div.onclick = () => { window.location = `/video/${encodeURIComponent(file)}`; };
+                div.onclick = () => { 
+                    window.location = `/video/${encodeURIComponent(file)}`; 
+                };
                 fileContainer.appendChild(div);
             });
-            fileContainer.style.display = 'block';
         })
         .catch(err => {
             console.error(err);
             alert("Failed to load playlist files");
         });
-
-    dropdown.style.display = 'none';
-    dropdown.selectedIndex = 0;
-};
+}
 </script>
+
 </body>
 </html>

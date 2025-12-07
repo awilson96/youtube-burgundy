@@ -25,10 +25,22 @@
         box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
     h2 {
-        margin-bottom: 20px;
+        margin-bottom: 10px;
         font-weight: bold;
         font-size: 1.8em;
     }
+
+    .belongs {
+        margin-bottom: 20px;
+        font-size: 1em;
+        color: #ffffff;
+    }
+    .belongs a {
+        color: #ffffff;
+        text-decoration: underline;
+        font-weight: bold;
+    }
+
     video { 
         width: 100%; 
         aspect-ratio: 16 / 9; 
@@ -57,7 +69,6 @@
         background-color: #444444; 
     }
 
-    /* Hidden dropdown */
     #playlist-dropdown {
         display: none;
         margin-top: 10px;
@@ -87,18 +98,26 @@
 </head>
 <body>
 <div class="container">
+
     <h2>{{ filename }}</h2>
 
-    <!-- Video Player -->
+    {% if file_playlists and file_playlists|length > 0 %}
+    <div class="belongs">
+        Belongs to:
+        {% for pl in file_playlists %}
+            <!-- FIXED: changed ?name= to ?select= -->
+            <a href="/playlists?select={{ pl }}">{{ pl }}</a>{% if not loop.last %}, {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
+
     <video id="player" controls>
         <source src="http://10.0.0.1:8080/video/{{ filename | urlencode }}" type="video/mp4">
         Your browser does not support HTML5 video.
     </video>
 
-    <!-- Add to Playlist Button -->
     <a class="menu-button" id="show-dropdown-btn">Add to Playlist</a>
 
-    <!-- Hidden Dropdown -->
     <select id="playlist-dropdown">
         <option value="" disabled selected>Select a playlist</option>
         {% for pl in playlists %}
@@ -106,8 +125,8 @@
         {% endfor %}
     </select>
 
-    <!-- Back Button -->
-    <a class="menu-button" href="/files">Back to Files</a>
+    <a class="menu-button" href="/files">Files</a>
+    <a class="menu-button" href="/playlists">Playlists</a>
 </div>
 
 <script>
@@ -116,10 +135,9 @@ const dropdown = document.getElementById('playlist-dropdown');
 
 showBtn.onclick = () => {
     dropdown.style.display = 'block';
-    dropdown.focus(); // Focus so that it opens the selection on mobile
+    dropdown.focus();
 };
 
-// Trigger add-to-playlist immediately when an option is selected
 dropdown.onchange = () => {
     const playlist = dropdown.value;
     if (!playlist) return;
@@ -132,7 +150,7 @@ dropdown.onchange = () => {
     .then(data => {
         alert(data.message);
         dropdown.style.display = 'none';
-        dropdown.selectedIndex = 0; // reset
+        dropdown.selectedIndex = 0;
     })
     .catch(err => {
         alert("Failed to add to playlist");
@@ -141,5 +159,6 @@ dropdown.onchange = () => {
     });
 };
 </script>
+
 </body>
 </html>
