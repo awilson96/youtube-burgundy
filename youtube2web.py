@@ -270,3 +270,47 @@ def playlist_details(request: Request, name: str):
         "request": request,
         "playlist_name": name
     })
+
+# Play all songs in order
+@app.post("/playlist/play_all")
+async def play_all(request: Request):
+    data = await request.json()
+    playlist_name = data.get("playlist")
+    if not playlist_name:
+        return JSONResponse({"success": False, "message": "Playlist name required"}, status_code=400)
+    
+    playlist_path = os.path.join(PLAYLIST_FOLDER, f"{playlist_name}.json")
+    if not os.path.exists(playlist_path):
+        return JSONResponse({"success": False, "message": "Playlist not found"}, status_code=404)
+    
+    with open(playlist_path, "r", encoding="utf-8") as f:
+        songs = json.load(f).get("songs", [])
+    
+    # TODO: Hook into your player / downloader
+    for song in songs:
+        print("Play:", song)
+    
+    return {"success": True}
+
+# Shuffle and play
+@app.post("/playlist/shuffle")
+async def shuffle_playlist(request: Request):
+    data = await request.json()
+    playlist_name = data.get("playlist")
+    if not playlist_name:
+        return JSONResponse({"success": False, "message": "Playlist name required"}, status_code=400)
+    
+    playlist_path = os.path.join(PLAYLIST_FOLDER, f"{playlist_name}.json")
+    if not os.path.exists(playlist_path):
+        return JSONResponse({"success": False, "message": "Playlist not found"}, status_code=404)
+    
+    with open(playlist_path, "r", encoding="utf-8") as f:
+        songs = json.load(f).get("songs", [])
+    
+    random.shuffle(songs)
+    
+    # TODO: Hook into your player / downloader
+    for song in songs:
+        print("Play (shuffled):", song)
+    
+    return {"success": True}

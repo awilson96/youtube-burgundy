@@ -35,11 +35,30 @@
         font-size: 1.8em; 
     }
 
+    .controls {
+        margin-bottom: 15px;
+    }
+    .control-btn {
+        background-color: #2c2c2c;
+        border: 1px solid white;
+        border-radius: 10px;
+        color: white;
+        font-weight: bold;
+        font-size: 16px;
+        padding: 8px 12px;
+        margin: 0 5px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+    }
+    .control-btn:hover { background-color: #444; }
+
     .file-list-container {
         max-height: 400px;
         width: 100%;
         overflow-y: auto;
-        margin-top: 20px;
+        margin-top: 10px;
         padding: 10px;
         background-color: #2c2c2c;
         border: 1px solid white;
@@ -94,111 +113,127 @@
         .container { padding: 30px 15px; }
         h2 { font-size: 1.5em; }
         .menu-button { font-size: 16px; padding: 12px; }
+        .control-btn { font-size: 14px; padding: 6px 10px; }
     }
 </style>
 </head>
 <body>
 <div class="container">
     <h2 id="playlist-title">Playlist</h2>
+
+    <!-- Play All / Shuffle Controls -->
+    <div class="controls">
+        <button class="control-btn" id="play-all-btn">▶ Play All</button>
+        <button class="control-btn" id="shuffle-btn">🔀 Shuffle</button>
+    </div>
+
     <div class="file-list-container" id="playlist-files"></div>
     <a href="/playlists" class="menu-button">Back to Playlist Viewer</a>
 </div>
 
 <script>
-// Get playlist name from URL
 const urlParams = new URLSearchParams(window.location.search);
 const playlistName = urlParams.get('name');
 document.getElementById('playlist-title').textContent = `Playlist: ${playlistName}`;
 
 const fileContainer = document.getElementById('playlist-files');
 
+// ----- Queue state -----
+let videoQueue = [];
+let queueIndex = 0;
+
+// ----- Play next video in queue -----
+function playNextInQueue() {
+    if (queueIndex >= videoQueue.length) {
+        videoQueue = [];
+        queueIndex = 0;
+        return;
+    }
+    const nextVideo = videoQueue[queueIndex];
+    queueIndex++;
+    window.location.href = `/video/${encodeURIComponent(nextVideo)}?queue=${encodeURIComponent(JSON.stringify(videoQueue))}`;
+}
+
+// ----- Load playlist table -----
 function loadPlaylist(playlist) {
     fetch(`/playlist/files?name=${encodeURIComponent(playlist)}`)
         .then(resp => resp.json())
         .then(data => {
             fileContainer.innerHTML = "";
-
             if (!data.songs || data.songs.length === 0) {
                 fileContainer.innerHTML = "<p>No files in this playlist.</p>";
                 return;
             }
 
-            // Build table
             const table = document.createElement("table");
             const thead = document.createElement("thead");
             const headerRow = document.createElement("tr");
-            const thSong = document.createElement("th"); thSong.textContent = "Song";
-            const thArtist = document.createElement("th"); thArtist.textContent = "Artist";
-            headerRow.appendChild(thSong);
-            headerRow.appendChild(thArtist);
-            thead.appendChild(headerRow);
-            table.appendChild(thead);
+            ["Song","Artist","Action"].forEach(h=>{
+                const th = document.createElement("th"); th.textContent=h; headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow); table.appendChild(thead);
 
             const tbody = document.createElement("tbody");
-
-            data.songs.forEach(file => {
-                // Remove .mp4 and split by " - "
-                const nameParts = file.endsWith('.mp4') ? file.slice(0, -4).split(' - ') : file.split(' - ');
+            data.songs.forEach(file=>{
+                const nameParts = file.endsWith('.mp4') ? file.slice(0,-4).split(' - ') : file.split(' - ');
                 const song = nameParts[0] || '';
                 const artist = nameParts[1] || '';
 
                 const tr = document.createElement("tr");
-                tr.onclick = () => { window.location = `/video/${encodeURIComponent(file)}`; };
+                tr.onclick = () => { videoQueue=[file]; queueIndex=0; playNextInQueue(); };
 
-                const tdSong = document.createElement("td"); tdSong.textContent = song;
-                const tdArtist = document.createElement("td"); tdArtist.textContent = artist;
+                const tdSong = document.createElement("td"); tdSong.textContent=song;
+                const tdArtist = document.createElement("td"); tdArtist.textContent=artist;
 
-                // Delete button in last column
                 const delBtn = document.createElement("button");
-                delBtn.className = "delete-btn";
-                delBtn.textContent = "Delete";
-                delBtn.onclick = (e) => {
+                delBtn.className="delete-btn"; delBtn.textContent="Delete";
+                delBtn.onclick = e=>{
                     e.stopPropagation();
-                    deleteFromPlaylist(playlist, file, tr);
+                    fetch("/playlist/remove", {
+                        method:"POST",
+                        headers:{"Content-Type":"application/json"},
+                        body: JSON.stringify({playlist,file})
+                    }).then(r=>r.json()).then(resp=>{
+                        if(resp.success) tr.remove();
+                        else alert(resp.message);
+                    });
                 };
 
-                tr.appendChild(tdSong);
-                tr.appendChild(tdArtist);
-                tr.appendChild(delBtn);
-
+                tr.appendChild(tdSong); tr.appendChild(tdArtist); tr.appendChild(delBtn);
                 tbody.appendChild(tr);
             });
 
             table.appendChild(tbody);
             fileContainer.appendChild(table);
         })
-        .catch(err => {
-            console.error(err);
-            alert("Failed to load playlist files");
+        .catch(err => { console.error(err); alert("Failed to load playlist files"); });
+}
+
+// ----- Play All -----
+document.getElementById('play-all-btn').onclick = () => {
+    fetch(`/playlist/files?name=${encodeURIComponent(playlistName)}`)
+        .then(r => r.json())
+        .then(data => {
+            if (!data.songs || data.songs.length===0) return;
+            videoQueue = data.songs.slice(); queueIndex=0;
+            playNextInQueue();
         });
-}
+};
 
-function deleteFromPlaylist(playlist, file, rowElement) {
-    fetch("/playlist/remove", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ playlist: playlist, file: file })
-    })
-    .then(resp => resp.json())
-    .then(data => {
-        if (data.success) {
-            rowElement.remove();
-        } else {
-            alert("Failed to remove song: " + data.message);
-        }
-    })
-    .catch(err => {
-        console.error(err);
-        alert("Error removing song");
-    });
-}
+// ----- Shuffle -----
+document.getElementById('shuffle-btn').onclick = () => {
+    fetch(`/playlist/files?name=${encodeURIComponent(playlistName)}`)
+        .then(r => r.json())
+        .then(data => {
+            if (!data.songs || data.songs.length===0) return;
+            videoQueue = data.songs.slice().sort(()=>Math.random()-0.5); queueIndex=0;
+            playNextInQueue();
+        });
+};
 
-// Load playlist on page load
-if (playlistName) {
-    loadPlaylist(playlistName);
-} else {
-    fileContainer.innerHTML = "<p>No playlist selected.</p>";
-}
+// Load playlist table on page load
+if(playlistName) loadPlaylist(playlistName);
+else fileContainer.innerHTML="<p>No playlist selected.</p>";
 </script>
 </body>
 </html>

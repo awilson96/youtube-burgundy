@@ -176,6 +176,40 @@ player.onloadedmetadata = () => {
     const secs = Math.floor(seconds % 60).toString().padStart(2, '0');
     durationDiv.textContent = `Duration: ${mins}:${secs}`;
 };
+
+// --- QUEUE FUNCTIONALITY ---
+let videoQueue = [];
+let queueIndex = 0;
+
+// Parse queue from URL if exists
+const urlParams = new URLSearchParams(window.location.search);
+const queueParam = urlParams.get('queue');
+if (queueParam) {
+    try {
+        videoQueue = JSON.parse(decodeURIComponent(queueParam));
+    } catch(e) {
+        console.error("Invalid queue", e);
+    }
+}
+
+// Determine current video index in the queue
+if (videoQueue.length > 0) {
+    const currentFile = "{{ filename }}";
+    const idx = videoQueue.indexOf(currentFile);
+    queueIndex = idx >= 0 ? idx : 0;
+}
+
+// Function to play the next video
+function playNext() {
+    queueIndex++;
+    if (queueIndex >= videoQueue.length) return; // End of queue
+    const nextVideo = videoQueue[queueIndex];
+    // Navigate to next video with same queue
+    window.location.href = `/video/${encodeURIComponent(nextVideo)}?queue=${encodeURIComponent(JSON.stringify(videoQueue))}`;
+}
+
+// Attach auto-play for next video
+player.onended = playNext;
 </script>
 
 </body>
