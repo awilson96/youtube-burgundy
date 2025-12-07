@@ -120,7 +120,7 @@
     <!-- Duration display -->
     <div class="duration" id="video-duration">Duration: Loading...</div>
 
-    <video id="player" controls>
+    <video id="player" controls playsinline webkit-playsinline>
         <source src="http://10.0.0.1:8080/video/{{ filename | urlencode }}" type="video/mp4">
         Your browser does not support HTML5 video.
     </video>
