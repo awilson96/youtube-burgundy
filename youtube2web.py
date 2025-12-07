@@ -94,6 +94,18 @@ def download_video(request: Request, link: str = Form(...), filename: str = Form
             "message": f"Error: {e}"
         })
 
+@app.post("/api/download")
+async def download_video_api(link: str = Form(...), filename: str = Form(...)):
+    try:
+        downloaded_file = downloader.download_video(link, filename)
+        if downloaded_file:
+            return JSONResponse({"success": True, "filename": os.path.basename(downloaded_file)})
+        else:
+            return JSONResponse({"success": False, "message": "Download failed."})
+    except Exception as e:
+        return JSONResponse({"success": False, "message": str(e)})
+
+
 
 # -----------------------------
 # Files/Search page
