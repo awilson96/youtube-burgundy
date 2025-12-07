@@ -2,49 +2,72 @@
 <html lang="en">
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>YouTube Downloader Menu</title>
+<title>YouTube Burgundy Menu</title>
 <style>
     body { 
-        font-family: Arial; 
+        font-family: Arial, sans-serif; 
         margin: 0; 
         padding: 0; 
         display: flex; 
         justify-content: center; 
         align-items: center; 
         height: 100vh; 
-        background-color: #f2f2f2; 
+        /* Radial gradient: light grey center to dark grey edges */
+        background: radial-gradient(circle at center, #d0d0d0 0%, #1c1c1c 100%);
     }
     .container { 
-        background: #fff; 
-        padding: 40px; 
-        border-radius: 12px; 
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
-        text-align: center; 
-        width: 90%; 
-        max-width: 400px; 
+        background-color: #800020; /* burgundy rectangle */
+        padding: 40px 20px;
+        border-radius: 20px;
+        text-align: center;
+        width: 90%;
+        max-width: 400px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
-    h1 { margin-bottom: 30px; }
+    h1 { 
+        margin-bottom: 30px; 
+        font-weight: bold;
+        color: white; 
+        font-size: 2em;
+    }
     .menu-button {
         display: block;
-        width: 100%;
+        width: 80%;          /* slightly smaller */
+        max-width: 300px;
         padding: 15px;
-        margin: 10px 0;
+        margin: 10px auto;   /* centers horizontally */
         font-size: 18px;
-        border: none;
-        border-radius: 8px;
-        background-color: #007bff;
+        border: 1px solid white; /* 1px white edge */
+        border-radius: 10px;
+        background-color: #2c2c2c; /* matte dark gray */
         color: white;
         cursor: pointer;
         text-decoration: none;
+        font-weight: bold;
+        transition: background-color 0.2s ease;
     }
     .menu-button:hover {
-        background-color: #0056b3;
+        background-color: #444444; /* slightly lighter on hover */
+    }
+
+    /* Ensure container is centered on mobile */
+    @media (max-width: 500px) {
+        .container {
+            padding: 30px 15px;
+        }
+        h1 {
+            font-size: 1.5em;
+        }
+        .menu-button {
+            font-size: 16px;
+            padding: 12px;
+        }
     }
 </style>
 </head>
 <body>
 <div class="container">
-    <h1>YouTube Downloader</h1>
+    <h1>YouTube Burgundy</h1>
     <a class="menu-button" href="/download">Download Video</a>
     <a class="menu-button" href="/files">My Files</a>
 </div>

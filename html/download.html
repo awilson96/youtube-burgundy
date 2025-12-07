@@ -2,36 +2,90 @@
 <html lang="en">
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>YouTube Downloader</title>
+<title>YouTube Burgundy - Download</title>
 <style>
-    body { font-family: Arial; margin: 10px; padding: 0; display: flex; justify-content: center; background-color: #f2f2f2; }
-    .container { width: 100%; max-width: 500px; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-    h2 { text-align: center; margin-bottom: 20px; }
-    input[type="text"] { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; box-sizing: border-box; }
-    input[type="submit"], .link-button { width: 100%; padding: 12px; font-size: 16px; border-radius: 8px; border: none; cursor: pointer; text-align: center; display: block; margin-top: 10px; }
-    input[type="submit"] { background-color: #007bff; color: white; }
-    input[type="submit"]:hover { background-color: #0056b3; }
-    .link-button { background-color: #28a745; color: white; text-decoration: none; }
-    .link-button:hover { background-color: #1e7e34; }
-    .message { margin-bottom: 20px; color: green; text-align: center; word-wrap: break-word; }
+    body { 
+        font-family: Arial, sans-serif; 
+        margin: 0; 
+        padding: 0; 
+        display: flex; 
+        justify-content: center; 
+        align-items: center; 
+        min-height: 100vh; 
+        background: radial-gradient(circle at center, #d0d0d0 0%, #1c1c1c 100%);
+    }
+    .container { 
+        background-color: #800020; /* burgundy container */
+        padding: 30px; 
+        border-radius: 20px;
+        text-align: center; 
+        width: 90%; 
+        max-width: 400px; 
+        color: white;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    h2 { 
+        margin-bottom: 25px; 
+        font-size: 24px;
+    }
+    input[type="text"] { 
+        width: 100%; 
+        padding: 12px; 
+        margin-bottom: 10px; 
+        border-radius: 8px; 
+        border: 1px solid #ccc; 
+        font-size: 16px; 
+        box-sizing: border-box; 
+    }
+
+    /* Unified button style */
+    .btn {
+        display: block;
+        width: 80%;          /* all buttons same width */
+        max-width: 300px;
+        padding: 12px;
+        margin: 10px auto;
+        font-size: 16px;
+        border-radius: 10px;
+        border: 1px solid white; /* white 1px edge */
+        background-color: #2c2c2c; 
+        color: white; 
+        cursor: pointer; 
+        text-decoration: none;
+        font-weight: bold; 
+        box-sizing: border-box; 
+        transition: background-color 0.2s ease;
+        text-align: center;
+    }
+
+    .btn:hover { 
+        background-color: #444444; 
+    }
+
+    .message { 
+        margin-bottom: 20px; 
+        color: #aaffaa; 
+        text-align: center; 
+        word-wrap: break-word; 
+    }
 </style>
 </head>
 <body>
 <div class="container">
-    <h2>YouTube Downloader</h2>
+    <h2>YouTube Burgundy - Download</h2>
 
     <!-- Download Form -->
     <form action="/download" method="post">
         <input type="text" name="link" placeholder="Enter YouTube URL" required>
-        <input type="text" name="filename" placeholder="File name (e.g., myVideo)" required>
-        <input type="submit" value="Download">
+        <input type="text" name="filename" placeholder="File name" required>
+        <input type="submit" value="Download" class="btn">
     </form>
 
     <div class="message">{{ message|safe }}</div>
 
     <!-- Navigation -->
-    <a href="/files" class="link-button">View Downloaded Files</a>
-    <a href="/" class="link-button">Home</a>
+    <a href="/files" class="btn">View Downloaded Files</a>
+    <a href="/" class="btn">Home</a>
 </div>
 </body>
 </html>

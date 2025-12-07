@@ -2,18 +2,82 @@
 <html lang="en">
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Downloaded Videos</title>
+<title>YouTube Burgundy - Files</title>
 <style>
-    body { font-family: Arial; margin: 10px; padding: 0; display: flex; justify-content: center; background-color: #f2f2f2; }
-    .container { width: 100%; max-width: 500px; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-    h2 { text-align: center; margin-bottom: 20px; }
-    input[type="text"] { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; box-sizing: border-box; }
-    .file-list { margin-top: 10px; }
-    .file-item { margin-bottom: 10px; word-wrap: break-word; cursor: pointer; color: #007bff; }
-    .file-item:hover { text-decoration: underline; }
-    video { width: 100%; margin-top: 10px; border-radius: 8px; display: none; }
-    .link-button { width: 100%; padding: 12px; font-size: 16px; border-radius: 8px; border: none; cursor: pointer; text-align: center; display: block; margin-top: 10px; background-color: #007bff; color: white; text-decoration: none; }
-    .link-button:hover { background-color: #0056b3; }
+    body { 
+        font-family: Arial, sans-serif; 
+        margin: 0; 
+        padding: 0; 
+        display: flex; 
+        justify-content: center; 
+        align-items: center; 
+        min-height: 100vh; 
+        background: radial-gradient(circle at center, #d0d0d0 0%, #1c1c1c 100%);
+    }
+    .container { 
+        background-color: #800020; /* burgundy container */
+        padding: 30px; 
+        border-radius: 20px;
+        text-align: center; 
+        width: 90%; 
+        max-width: 400px; 
+        color: white;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    h2 { 
+        margin-bottom: 20px; 
+        font-size: 24px;
+    }
+    input[type="text"] { 
+        width: 100%; 
+        padding: 12px; 
+        margin-bottom: 10px; 
+        border-radius: 8px; 
+        border: 1px solid #ccc; 
+        font-size: 16px; 
+        box-sizing: border-box; 
+    }
+    .file-list { 
+        margin-top: 10px; 
+    }
+    .file-item { 
+        margin-bottom: 10px; 
+        word-wrap: break-word; 
+        cursor: pointer; 
+        color: #aaffff; 
+    }
+    .file-item:hover { 
+        text-decoration: underline; 
+    }
+    video { 
+        width: 100%; 
+        margin-top: 10px; 
+        border-radius: 8px; 
+        display: none; 
+    }
+
+    /* Unified button style */
+    .btn {
+        display: block;
+        width: 80%;          /* match downloads page */
+        max-width: 300px;
+        padding: 12px;
+        margin: 10px auto;
+        font-size: 16px;
+        border-radius: 10px;
+        border: 1px solid white; /* white edge */
+        background-color: #2c2c2c; 
+        color: white; 
+        cursor: pointer; 
+        text-decoration: none;
+        font-weight: bold; 
+        box-sizing: border-box; 
+        text-align: center;
+        transition: background-color 0.2s ease;
+    }
+    .btn:hover { 
+        background-color: #444444; 
+    }
 </style>
 </head>
 <body>
@@ -31,9 +95,9 @@
     <!-- Video player -->
     <video id="player" controls></video>
 
-    <!-- Navigation -->
-    <a href="/download" class="link-button">Back to Download Page</a>
-    <a href="/" class="link-button">Home</a>
+    <!-- Navigation buttons -->
+    <a href="/download" class="btn">Back to Download Page</a>
+    <a href="/" class="btn">Home</a>
 </div>
 
 <script>
@@ -54,9 +118,3 @@ function playVideo(filename) {
 document.getElementById("search").addEventListener("input", function() {
     const query = this.value.toLowerCase();
     document.querySelectorAll(".file-item").forEach(item => {
-        item.style.display = item.textContent.toLowerCase().includes(query) ? "block" : "none";
-    });
-});
-</script>
-</body>
-</html>
