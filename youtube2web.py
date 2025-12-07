@@ -7,7 +7,7 @@ import os
 
 app = FastAPI()
 
-# Initialize the downloader
+# Initialize downloader
 downloader = YoutubeSegmentDownloader()
 DOWNLOAD_FOLDER = downloader.download_path
 os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
@@ -15,35 +15,66 @@ os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 # Templates folder
 templates = Jinja2Templates(directory="html")
 
-
+# -----------------------------
+# Index / Menu page
+# -----------------------------
 @app.get("/", response_class=HTMLResponse)
-def index(request: Request, query: str = ""):
-    all_files = os.listdir(DOWNLOAD_FOLDER)  # ← NO filtering
-    
-    # Optional: apply search filter
-    if query:
-        all_files = [f for f in all_files if query.lower() in f.lower()]
-    
-    return templates.TemplateResponse("index.html", {
+def index_page(request: Request):
+    """Render the main menu page."""
+    return templates.TemplateResponse("index.html", {"request": request})
+
+
+# -----------------------------
+# Download page (GET)
+# -----------------------------
+@app.get("/download", response_class=HTMLResponse)
+def download_page(request: Request, message: str = ""):
+    """Render download page with optional message."""
+    return templates.TemplateResponse("download.html", {
         "request": request,
-        "files": all_files,
-        "query": query,
-        "message": ""
+        "message": message
     })
 
+
+# -----------------------------
+# Download action (POST)
+# -----------------------------
 @app.post("/download", response_class=HTMLResponse)
-def download(request: Request, link: str = Form(...), filename: str = Form(...)):
+def download_video(request: Request, link: str = Form(...), filename: str = Form(...)):
     try:
-        print(f"Downloading video: {link} as {filename}")
         downloaded_file = downloader.download_video(link, filename)
-
         if downloaded_file:
-            message = f"<p>Downloaded and ready to play: {os.path.basename(downloaded_file)}</p>"
+            message = f"Downloaded and ready to play: {os.path.basename(downloaded_file)}"
         else:
-            message = "<p style='color:red'>Download failed.</p>"
+            message = "Download failed."
 
-        # List videos
-        files = [f for f in os.listdir(DOWNLOAD_FOLDER) if f.endswith(".mp4")]
-        return templates.TemplateResponse("index.html", {"request": request, "files": files, "query": "", "message": message})
+        # After download, show the download page again
+        return templates.TemplateResponse("download.html", {
+            "request": request,
+            "message": message
+        })
+
     except Exception as e:
-        return templates.TemplateResponse("index.html", {"request": request, "files": [], "query": "", "message": f"<p style='color:red'>Error: {e}</p>"})
+        return templates.TemplateResponse("download.html", {
+            "request": request,
+            "message": f"Error: {e}"
+        })
+
+
+# -----------------------------
+# Files/Search page
+# -----------------------------
+@app.get("/files", response_class=HTMLResponse)
+def files_page(request: Request, query: str = ""):
+    """Render files page with search + playback functionality."""
+    all_files = os.listdir(DOWNLOAD_FOLDER)
+
+    # Optional search filter
+    if query:
+        all_files = [f for f in all_files if query.lower() in f.lower()]
+
+    return templates.TemplateResponse("files.html", {
+        "request": request,
+        "files": all_files,
+        "query": query
+    })

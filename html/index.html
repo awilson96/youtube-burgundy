@@ -2,125 +2,51 @@
 <html lang="en">
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>YouTube Downloader</title>
+<title>YouTube Downloader Menu</title>
 <style>
-    body { font-family: Arial; margin: 10px; padding: 0; display: flex; justify-content: center; background-color: #f2f2f2; }
-    .container { width: 100%; max-width: 500px; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-    h2 { text-align: center; margin-bottom: 20px; }
-    input[type="text"] { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; box-sizing: border-box; }
-    input[type="submit"] { width: 100%; padding: 12px; font-size: 16px; border-radius: 8px; border: none; background-color: #007bff; color: white; cursor: pointer; }
-    input[type="submit"]:hover { background-color: #0056b3; }
-    .message { margin-bottom: 20px; color: green; text-align: center; word-wrap: break-word; }
-    .file-list { margin-top: 10px; }
-    .file-item { margin-bottom: 10px; word-wrap: break-word; cursor: pointer; color: #007bff; }
-    .file-item:hover { text-decoration: underline; }
-    video { width: 100%; margin-top: 10px; border-radius: 8px; display: none; }
-    pre { 
-        margin-top: 10px; 
-        padding: 10px; 
-        background: #f7f7f7; 
-        border-radius: 8px; 
-        white-space: pre-wrap; 
-        display: none;
-        border: 1px solid #ccc;
+    body { 
+        font-family: Arial; 
+        margin: 0; 
+        padding: 0; 
+        display: flex; 
+        justify-content: center; 
+        align-items: center; 
+        height: 100vh; 
+        background-color: #f2f2f2; 
+    }
+    .container { 
+        background: #fff; 
+        padding: 40px; 
+        border-radius: 12px; 
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+        text-align: center; 
+        width: 90%; 
+        max-width: 400px; 
+    }
+    h1 { margin-bottom: 30px; }
+    .menu-button {
+        display: block;
+        width: 100%;
+        padding: 15px;
+        margin: 10px 0;
+        font-size: 18px;
+        border: none;
+        border-radius: 8px;
+        background-color: #007bff;
+        color: white;
+        cursor: pointer;
+        text-decoration: none;
+    }
+    .menu-button:hover {
+        background-color: #0056b3;
     }
 </style>
 </head>
 <body>
 <div class="container">
-    <h2>YouTube Downloader</h2>
-
-    <!-- Download Form -->
-    <form action="/download" method="post">
-        <input type="text" name="link" placeholder="Enter YouTube URL" required>
-        <input type="text" name="filename" placeholder="File name (e.g., myVideo)" required>
-        <input type="submit" value="Download">
-    </form>
-
-    <div class="message">{{ message|safe }}</div>
-
-    <!-- Search -->
-    <input type="text" id="search" placeholder="Search downloaded videos" value="{{ query }}">
-    <div class="file-list" id="file-list">
-        {% for file in files %}
-            <div class="file-item" onclick="openFile('{{ file }}')">{{ file }}</div>
-        {% endfor %}
-    </div>
-
-    <!-- Video player -->
-    <video id="player" controls></video>
-
-    <!-- Text file display -->
-    <pre id="textDisplay"></pre>
+    <h1>YouTube Downloader</h1>
+    <a class="menu-button" href="/download">Download Video</a>
+    <a class="menu-button" href="/files">My Files</a>
 </div>
-
-<script>
-const player = document.getElementById("player");
-const textDisplay = document.getElementById("textDisplay");
-
-function openFile(filename) {
-    console.log("Clicked file:", filename);
-
-    let url = `http://10.0.0.1:8080/video/${encodeURIComponent(filename)}`;
-    console.log("Loading URL:", url);
-
-    // Detect .txt files
-    if (filename.toLowerCase().endsWith(".txt")) {
-        displayTextFile(url);
-        return;
-    }
-
-    // Otherwise assume video
-    playVideo(url);
-}
-
-function displayTextFile(url) {
-    // Hide video player
-    player.style.display = "none";
-    player.pause();
-
-    // Show text display
-    textDisplay.style.display = "block";
-    textDisplay.textContent = "Loading...";
-
-    fetch(url)
-        .then(response => {
-            if (!response.ok) throw new Error("Failed to fetch text file");
-            return response.text();
-        })
-        .then(text => {
-            textDisplay.textContent = text;
-        })
-        .catch(err => {
-            console.error("Error loading text file:", err);
-            textDisplay.textContent = "Failed to load text file.";
-        });
-}
-
-function playVideo(url) {
-    // Hide text viewer
-    textDisplay.style.display = "none";
-
-    // Show video player
-    player.style.display = "block";
-    player.src = url;
-    player.load();
-
-    player.play().catch(err => {
-        console.error("Playback failed:", err);
-        alert("Failed to play video. Make sure the file exists and is accessible.");
-    });
-}
-
-// Live search
-document.getElementById("search").addEventListener("input", function() {
-    const query = this.value.toLowerCase();
-    document.querySelectorAll(".file-item").forEach(item => {
-        item.style.display = item.textContent.toLowerCase().includes(query) 
-            ? "block" 
-            : "none";
-    });
-});
-</script>
 </body>
 </html>

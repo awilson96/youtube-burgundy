@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YouTube Downloader</title>
+<style>
+    body { font-family: Arial; margin: 10px; padding: 0; display: flex; justify-content: center; background-color: #f2f2f2; }
+    .container { width: 100%; max-width: 500px; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    h2 { text-align: center; margin-bottom: 20px; }
+    input[type="text"] { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; box-sizing: border-box; }
+    input[type="submit"], .link-button { width: 100%; padding: 12px; font-size: 16px; border-radius: 8px; border: none; cursor: pointer; text-align: center; display: block; margin-top: 10px; }
+    input[type="submit"] { background-color: #007bff; color: white; }
+    input[type="submit"]:hover { background-color: #0056b3; }
+    .link-button { background-color: #28a745; color: white; text-decoration: none; }
+    .link-button:hover { background-color: #1e7e34; }
+    .message { margin-bottom: 20px; color: green; text-align: center; word-wrap: break-word; }
+</style>
+</head>
+<body>
+<div class="container">
+    <h2>YouTube Downloader</h2>
+
+    <!-- Download Form -->
+    <form action="/download" method="post">
+        <input type="text" name="link" placeholder="Enter YouTube URL" required>
+        <input type="text" name="filename" placeholder="File name (e.g., myVideo)" required>
+        <input type="submit" value="Download">
+    </form>
+
+    <div class="message">{{ message|safe }}</div>
+
+    <!-- Navigation -->
+    <a href="/files" class="link-button">View Downloaded Files</a>
+    <a href="/" class="link-button">Home</a>
+</div>
+</body>
+</html>
