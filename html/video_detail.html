@@ -31,7 +31,7 @@
     }
 
     .belongs {
-        margin-bottom: 20px;
+        margin-bottom: 5px;
         font-size: 1em;
         color: #ffffff;
     }
@@ -39,6 +39,12 @@
         color: #ffffff;
         text-decoration: underline;
         font-weight: bold;
+    }
+
+    .duration {
+        margin-bottom: 20px;
+        font-size: 1em;
+        color: #ffffff;
     }
 
     video { 
@@ -111,6 +117,9 @@
     </div>
     {% endif %}
 
+    <!-- Duration display -->
+    <div class="duration" id="video-duration">Duration: Loading...</div>
+
     <video id="player" controls>
         <source src="http://10.0.0.1:8080/video/{{ filename | urlencode }}" type="video/mp4">
         Your browser does not support HTML5 video.
@@ -132,6 +141,8 @@
 <script>
 const showBtn = document.getElementById('show-dropdown-btn');
 const dropdown = document.getElementById('playlist-dropdown');
+const player = document.getElementById('player');
+const durationDiv = document.getElementById('video-duration');
 
 showBtn.onclick = () => {
     dropdown.style.display = 'block';
@@ -157,6 +168,14 @@ dropdown.onchange = () => {
         dropdown.style.display = 'none';
         dropdown.selectedIndex = 0; 
     });
+};
+
+// Update duration once metadata is loaded
+player.onloadedmetadata = () => {
+    const seconds = player.duration;
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60).toString().padStart(2, '0');
+    durationDiv.textContent = `Duration: ${mins}:${secs}`;
 };
 </script>
 
