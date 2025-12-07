@@ -9,8 +9,13 @@ app = FastAPI()
 
 # Initialize downloader
 downloader = YoutubeSegmentDownloader()
-DOWNLOAD_FOLDER = downloader.download_path
+
+# Set download path to D:\Music\
+DOWNLOAD_FOLDER = r"D:\Music"
 os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
+
+# Make sure the downloader also uses this folder
+downloader.download_path = DOWNLOAD_FOLDER
 
 # Templates folder
 templates = Jinja2Templates(directory="html")
