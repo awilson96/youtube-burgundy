@@ -23,6 +23,7 @@
         max-width: 500px; 
         color: white;
         box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        position: relative;
     }
     h2 { margin-bottom: 20px; font-size: 24px; }
     input[type="text"] { 
@@ -56,6 +57,19 @@
         cursor: pointer;
     }
 
+    .delete-btn {
+        background-color: #800000;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    .delete-btn:hover {
+        background-color: #ff0000;
+    }
+
     /* Buttons styled to match container */
     .btn {
         display: block;
@@ -76,6 +90,26 @@
         transition: background-color 0.2s ease;
     }
     .btn:hover { background-color: #444444; }
+
+    /* Toast styling */
+    .toast {
+        position: fixed; 
+        top: 20px;                
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #333;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 10px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.4s ease;
+        z-index: 1000;            
+    }
+    .toast.show {
+        opacity: 1;
+        pointer-events: auto;
+    }
 </style>
 </head>
 <body>
@@ -92,14 +126,18 @@
                 <tr>
                     <th>Song</th>
                     <th>Artist</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for file in files %}
                     {% set name_artist = file[:-4].split(' - ') %}
-                    <tr onclick="window.location='/video/{{ file }}'">
+                    <tr data-filename="{{ file }}">
                         <td>{{ name_artist[0] }}</td>
                         <td>{{ name_artist[1] }}</td>
+                        <td>
+                            <button class="delete-btn" onclick="deleteFile(event, '{{ file }}')">Delete</button>
+                        </td>
                     </tr>
                 {% endfor %}
             </tbody>
@@ -108,9 +146,19 @@
 
     <a href="/download" class="btn">Back to Download Page</a>
     <a href="/" class="btn">Home</a>
+
+    <div id="toast" class="toast"></div>
 </div>
 
 <script>
+const toast = document.getElementById('toast');
+
+function showToast(message) {
+    toast.textContent = message;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
 // Live search filtering
 document.getElementById("search").addEventListener("input", function() {
     const query = this.value.toLowerCase();
@@ -119,6 +167,34 @@ document.getElementById("search").addEventListener("input", function() {
         row.style.display = text.includes(query) ? "" : "none";
     });
 });
+
+// Delete file
+function deleteFile(event, filename) {
+    event.stopPropagation(); // prevent row click
+
+    if (!confirm(`Are you sure you want to delete "${filename}"?`)) return;
+
+    fetch('/api/delete_file', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ filename })
+    })
+    .then(resp => resp.json())
+    .then(data => {
+        if (data.success) {
+            // Remove row from table
+            const row = document.querySelector(`tr[data-filename="${filename}"]`);
+            if (row) row.remove();
+            showToast(`Deleted: ${filename}`);
+        } else {
+            showToast(`Delete failed: ${data.message}`);
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        showToast("An error occurred while deleting the file.");
+    });
+}
 </script>
 </body>
 </html>

@@ -49,18 +49,13 @@ def get_playlists_containing(filename: str):
 
     return matches
 
-# -----------------------------
-# Index / Menu page
-# -----------------------------
+
 @app.get("/", response_class=HTMLResponse)
 def index_page(request: Request):
     """Render the main menu page."""
     return templates.TemplateResponse("index.html", {"request": request})
 
 
-# -----------------------------
-# Download page (GET)
-# -----------------------------
 @app.get("/download", response_class=HTMLResponse)
 def download_page(request: Request, message: str = ""):
     """Render download page with optional message."""
@@ -70,9 +65,6 @@ def download_page(request: Request, message: str = ""):
     })
 
 
-# -----------------------------
-# Download action (POST)
-# -----------------------------
 @app.post("/download", response_class=HTMLResponse)
 def download_video(request: Request, link: str = Form(...), filename: str = Form(...)):
     try:
@@ -94,6 +86,7 @@ def download_video(request: Request, link: str = Form(...), filename: str = Form
             "message": f"Error: {e}"
         })
 
+
 @app.post("/api/download")
 async def download_video_api(link: str = Form(...), filename: str = Form(...)):
     try:
@@ -106,10 +99,24 @@ async def download_video_api(link: str = Form(...), filename: str = Form(...)):
         return JSONResponse({"success": False, "message": str(e)})
 
 
+@app.post("/api/delete_file")
+async def delete_file(request: Request):
+    data = await request.json()
+    filename = data.get("filename")
+    if not filename:
+        return JSONResponse({"success": False, "message": "No filename provided"})
 
-# -----------------------------
-# Files/Search page
-# -----------------------------
+    file_path = os.path.join(DOWNLOAD_FOLDER, filename)
+    if not os.path.exists(file_path):
+        return JSONResponse({"success": False, "message": "File does not exist"})
+
+    try:
+        os.remove(file_path)
+        return JSONResponse({"success": True, "message": f"{filename} deleted"})
+    except Exception as e:
+        return JSONResponse({"success": False, "message": str(e)})
+
+
 @app.get("/files", response_class=HTMLResponse)
 def files_page(request: Request, query: str = ""):
     """Render files page with search + playback functionality."""
@@ -124,6 +131,7 @@ def files_page(request: Request, query: str = ""):
         "files": all_files,
         "query": query
     })
+
 
 @app.get("/video/{filename}", response_class=HTMLResponse)
 def video_page(request: Request, filename: str):
@@ -141,9 +149,7 @@ def video_page(request: Request, filename: str):
         "file_playlists": file_playlists # For Belongs-to list
     })
 
-# -----------------------------
-# Playlist Viewer Page
-# -----------------------------
+
 @app.get("/playlists", response_class=HTMLResponse)
 def playlist_viewer(request: Request):
     """Render playlist viewer page with list of playlists."""
@@ -153,9 +159,7 @@ def playlist_viewer(request: Request):
         "playlists": playlists
     })
 
-# -----------------------------
-# Return files in a playlist (filtered by actual files)
-# -----------------------------
+
 @app.get("/playlist/files")
 def get_playlist_files(name: str):
     playlist_path = os.path.join(PLAYLIST_FOLDER, f"{name}.json")
@@ -174,9 +178,7 @@ def get_playlist_files(name: str):
 
     return JSONResponse({"songs": filtered_files})
 
-# -----------------------------
-# Add file to playlist
-# -----------------------------
+
 @app.post("/playlist/add")
 async def add_to_playlist(request: Request):
     data = await request.json()
@@ -206,6 +208,7 @@ async def add_to_playlist(request: Request):
 
     return JSONResponse({"success": True, "message": f"Added {file_name} to {playlist_name}"})
 
+
 @app.post("/playlist/remove")
 async def remove_from_playlist(request: Request):
     data = await request.json()
@@ -232,6 +235,7 @@ async def remove_from_playlist(request: Request):
         json.dump(playlist_data, f, indent=4)
 
     return JSONResponse({"success": True, "message": f"Removed {file_name} from {playlist_name}"})
+
 
 @app.post("/playlist/create")
 async def create_playlist(request: Request):
@@ -274,7 +278,8 @@ async def delete_playlist(request: Request):
         return JSONResponse({"success": True, "message": f"Playlist '{playlist_name}' deleted"})
     except Exception as e:
         return JSONResponse({"success": False, "message": f"Error deleting playlist: {e}"}, status_code=500)
-    
+
+   
 @app.get("/playlist/details", response_class=HTMLResponse)
 def playlist_details(request: Request, name: str):
     """Render playlist details page for a single playlist"""
@@ -283,7 +288,7 @@ def playlist_details(request: Request, name: str):
         "playlist_name": name
     })
 
-# Play all songs in order
+
 @app.post("/playlist/play_all")
 async def play_all(request: Request):
     data = await request.json()
@@ -298,13 +303,13 @@ async def play_all(request: Request):
     with open(playlist_path, "r", encoding="utf-8") as f:
         songs = json.load(f).get("songs", [])
     
-    # TODO: Hook into your player / downloader
+
     for song in songs:
         print("Play:", song)
     
     return {"success": True}
 
-# Shuffle and play
+
 @app.post("/playlist/shuffle")
 async def shuffle_playlist(request: Request):
     data = await request.json()
@@ -321,7 +326,7 @@ async def shuffle_playlist(request: Request):
     
     random.shuffle(songs)
     
-    # TODO: Hook into your player / downloader
+
     for song in songs:
         print("Play (shuffled):", song)
     
