@@ -111,8 +111,7 @@
     <div class="belongs">
         Belongs to:
         {% for pl in file_playlists %}
-            <!-- FIXED: changed ?name= to ?select= -->
-            <a href="/playlists?select={{ pl }}">{{ pl }}</a>{% if not loop.last %}, {% endif %}
+            <a href="http://10.0.0.1:8000/playlist/details?name={{ pl | urlencode }}">{{ pl }}</a>
         {% endfor %}
     </div>
     {% endif %}
