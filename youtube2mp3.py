@@ -16,7 +16,7 @@ class YoutubeSegmentDownloader:
             return result['duration']  # Returns duration in seconds
 
     def download_video(self, video_url, segment_filename):
-        """Download the whole video."""
+        """Download a mobile-friendly test video: H.264 + AAC in MP4."""
         # Ensure download path exists
         if not os.path.exists(self.download_path):
             os.makedirs(self.download_path)
@@ -24,18 +24,15 @@ class YoutubeSegmentDownloader:
         video_filepath = os.path.join(self.download_path, f"{segment_filename}.mp4")
 
         ydl_opts = {
-            'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]',
+            'format': '18',  # format 18 = 360p H.264 + AAC MP4 (guaranteed iOS-friendly)
             'outtmpl': video_filepath,
-            'noplaylist': True,  # only single video
+            'noplaylist': True,
             'quiet': False,
-            'extractor_args': {
-                'youtube': {'player_client': 'default'}  # explicitly use default client
-            },
-            'merge_output_format': 'mp4'  # ensures audio+video merged
+            'merge_output_format': 'mp4'
         }
 
         try:
-            print(f"Downloading video to: {video_filepath}")
+            print(f"Downloading test video to: {video_filepath}")
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([video_url])
             print("Download complete!")
@@ -96,4 +93,4 @@ if __name__ == "__main__":
     segment_filename = input("Enter a base name for the segment files (e.g., 'myVideo'): ").strip()
 
     # Download and split the video into segments
-    downloader.download_and_split(video_url, segment_filename)
+    downloader.download_video(video_url, segment_filename)

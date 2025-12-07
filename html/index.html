@@ -14,6 +14,16 @@
     .file-list { margin-top: 10px; }
     .file-item { margin-bottom: 10px; word-wrap: break-word; cursor: pointer; color: #007bff; }
     .file-item:hover { text-decoration: underline; }
+    video { width: 100%; margin-top: 10px; border-radius: 8px; display: none; }
+    pre { 
+        margin-top: 10px; 
+        padding: 10px; 
+        background: #f7f7f7; 
+        border-radius: 8px; 
+        white-space: pre-wrap; 
+        display: none;
+        border: 1px solid #ccc;
+    }
 </style>
 </head>
 <body>
@@ -33,28 +43,82 @@
     <input type="text" id="search" placeholder="Search downloaded videos" value="{{ query }}">
     <div class="file-list" id="file-list">
         {% for file in files %}
-            <div class="file-item" onclick="playVideo('{{ file }}')">{{ file }}</div>
+            <div class="file-item" onclick="openFile('{{ file }}')">{{ file }}</div>
         {% endfor %}
     </div>
+
+    <!-- Video player -->
+    <video id="player" controls></video>
+
+    <!-- Text file display -->
+    <pre id="textDisplay"></pre>
 </div>
 
 <script>
-function playVideo(filename) {
-    // Open the video in a new window/tab
-    window.open(`/video/${encodeURIComponent(filename)}`, '_blank');
+const player = document.getElementById("player");
+const textDisplay = document.getElementById("textDisplay");
+
+function openFile(filename) {
+    console.log("Clicked file:", filename);
+
+    let url = `http://10.0.0.1:8080/video/${encodeURIComponent(filename)}`;
+    console.log("Loading URL:", url);
+
+    // Detect .txt files
+    if (filename.toLowerCase().endsWith(".txt")) {
+        displayTextFile(url);
+        return;
+    }
+
+    // Otherwise assume video
+    playVideo(url);
+}
+
+function displayTextFile(url) {
+    // Hide video player
+    player.style.display = "none";
+    player.pause();
+
+    // Show text display
+    textDisplay.style.display = "block";
+    textDisplay.textContent = "Loading...";
+
+    fetch(url)
+        .then(response => {
+            if (!response.ok) throw new Error("Failed to fetch text file");
+            return response.text();
+        })
+        .then(text => {
+            textDisplay.textContent = text;
+        })
+        .catch(err => {
+            console.error("Error loading text file:", err);
+            textDisplay.textContent = "Failed to load text file.";
+        });
+}
+
+function playVideo(url) {
+    // Hide text viewer
+    textDisplay.style.display = "none";
+
+    // Show video player
+    player.style.display = "block";
+    player.src = url;
+    player.load();
+
+    player.play().catch(err => {
+        console.error("Playback failed:", err);
+        alert("Failed to play video. Make sure the file exists and is accessible.");
+    });
 }
 
 // Live search
-const searchInput = document.getElementById("search");
-searchInput.addEventListener("input", function() {
+document.getElementById("search").addEventListener("input", function() {
     const query = this.value.toLowerCase();
-    const items = document.querySelectorAll(".file-item");
-    items.forEach(item => {
-        if (item.textContent.toLowerCase().includes(query)) {
-            item.style.display = "block";
-        } else {
-            item.style.display = "none";
-        }
+    document.querySelectorAll(".file-item").forEach(item => {
+        item.style.display = item.textContent.toLowerCase().includes(query) 
+            ? "block" 
+            : "none";
     });
 });
 </script>
