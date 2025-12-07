@@ -16,30 +16,57 @@
     }
     .container { 
         background-color: #800020;
-        padding: 20px; border-radius: 20px;
-        width: 90%; max-width: 400px; color: white;
-        text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        padding: 20px; 
+        border-radius: 20px;
+        width: 90%; 
+        max-width: 500px; 
+        color: white;
+        text-align: center; 
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
-    video { width: 100%; border-radius: 8px; }
+    video { 
+        width: 100%; 
+        aspect-ratio: 16 / 9; /* ensures landscape ratio */
+        border-radius: 8px; 
+        background-color: black;
+        margin-bottom: 15px;
+    }
     select, button { 
-        margin-top: 10px; width: 100%; padding: 10px; 
-        border-radius: 8px; border: none; font-size: 16px; 
+        margin-top: 10px; 
+        width: 100%; 
+        padding: 10px; 
+        border-radius: 8px; 
+        border: none; 
+        font-size: 16px; 
         cursor: pointer; 
     }
-    button { background-color: #2c2c2c; color: white; border: 1px solid white; font-weight: bold; }
+    button { 
+        background-color: #2c2c2c; 
+        color: white; 
+        border: 1px solid white; 
+        font-weight: bold; 
+    }
     button:hover { background-color: #444; }
-    .btn { margin-top: 10px; display: block; text-decoration: none; color: white; font-weight: bold; }
+    .btn { 
+        margin-top: 10px; 
+        display: block; 
+        text-decoration: none; 
+        color: white; 
+        font-weight: bold; 
+    }
 </style>
 </head>
 <body>
 <div class="container">
     <h2>{{ filename }}</h2>
 
+    <!-- Video Player -->
     <video id="player" controls>
         <source src="http://10.0.0.1:8080/video/{{ filename | urlencode }}" type="video/mp4">
         Your browser does not support HTML5 video.
     </video>
 
+    <!-- Playlist Controls -->
     <div>
         <select id="playlist-dropdown">
             {% for pl in playlists %}
@@ -49,6 +76,7 @@
         <button onclick="addToPlaylist()">Add to Playlist</button>
     </div>
 
+    <!-- Back Button -->
     <a href="/files" class="btn">Back to Files</a>
 </div>
 
