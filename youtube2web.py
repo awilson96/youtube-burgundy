@@ -100,6 +100,42 @@ def video_page(request: Request, filename: str):
         "playlists": playlists
     })
 
+# -----------------------------
+# Playlist Viewer Page
+# -----------------------------
+@app.get("/playlists", response_class=HTMLResponse)
+def playlist_viewer(request: Request):
+    """Render playlist viewer page with list of playlists."""
+    playlists = [f[:-5] for f in os.listdir(PLAYLIST_FOLDER) if f.endswith(".json")]
+    return templates.TemplateResponse("playlist_viewer.html", {
+        "request": request,
+        "playlists": playlists
+    })
+
+# -----------------------------
+# Return files in a playlist (filtered by actual files)
+# -----------------------------
+@app.get("/playlist/files")
+def get_playlist_files(name: str):
+    playlist_path = os.path.join(PLAYLIST_FOLDER, f"{name}.json")
+    if not os.path.exists(playlist_path):
+        return JSONResponse({"songs": []})
+
+    # Load playlist JSON
+    with open(playlist_path, "r", encoding="utf-8") as f:
+        playlist_data = json.load(f)
+
+    # Get all files in download folder
+    all_files = os.listdir(DOWNLOAD_FOLDER)
+
+    # Filter: only include files that exist in download folder
+    filtered_files = [f for f in all_files if f in playlist_data.get("songs", [])]
+
+    return JSONResponse({"songs": filtered_files})
+
+# -----------------------------
+# Add file to playlist
+# -----------------------------
 @app.post("/playlist/add")
 async def add_to_playlist(request: Request):
     data = await request.json()
