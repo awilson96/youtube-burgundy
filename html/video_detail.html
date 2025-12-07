@@ -16,43 +16,72 @@
     }
     .container { 
         background-color: #800020;
-        padding: 20px; 
+        padding: 40px 20px; 
         border-radius: 20px;
         width: 90%; 
-        max-width: 500px; 
+        max-width: 400px; 
         color: white;
         text-align: center; 
         box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
+    h2 {
+        margin-bottom: 20px;
+        font-weight: bold;
+        font-size: 1.8em;
+    }
     video { 
         width: 100%; 
-        aspect-ratio: 16 / 9; /* ensures landscape ratio */
+        aspect-ratio: 16 / 9; 
         border-radius: 8px; 
         background-color: black;
         margin-bottom: 15px;
     }
-    select, button { 
-        margin-top: 10px; 
-        width: 100%; 
-        padding: 10px; 
-        border-radius: 8px; 
-        border: none; 
-        font-size: 16px; 
-        cursor: pointer; 
-    }
-    button { 
-        background-color: #2c2c2c; 
-        color: white; 
+    .menu-button {
+        display: block;
+        width: 80%;          
+        max-width: 300px;
+        padding: 15px;
+        margin: 10px auto;   
+        font-size: 18px;
         border: 1px solid white; 
-        font-weight: bold; 
+        border-radius: 10px;
+        background-color: #2c2c2c; 
+        color: white;
+        cursor: pointer;
+        text-decoration: none;
+        font-weight: bold;
+        transition: background-color 0.2s ease;
+        text-align: center;
     }
-    button:hover { background-color: #444; }
-    .btn { 
-        margin-top: 10px; 
-        display: block; 
-        text-decoration: none; 
-        color: white; 
-        font-weight: bold; 
+    .menu-button:hover {
+        background-color: #444444; 
+    }
+
+    /* Hidden dropdown */
+    #playlist-dropdown {
+        display: none;
+        margin-top: 10px;
+        width: 100%;
+        padding: 10px;
+        border-radius: 8px;
+        font-size: 16px;
+        border: 1px solid #ccc;
+        color: black;
+        background-color: white;
+        cursor: pointer;
+    }
+
+    @media (max-width: 500px) {
+        .container {
+            padding: 30px 15px;
+        }
+        h2 {
+            font-size: 1.5em;
+        }
+        .menu-button {
+            font-size: 16px;
+            padding: 12px;
+        }
     }
 </style>
 </head>
@@ -66,32 +95,51 @@
         Your browser does not support HTML5 video.
     </video>
 
-    <!-- Playlist Controls -->
-    <div>
-        <select id="playlist-dropdown">
-            {% for pl in playlists %}
-                <option value="{{ pl }}">{{ pl }}</option>
-            {% endfor %}
-        </select>
-        <button onclick="addToPlaylist()">Add to Playlist</button>
-    </div>
+    <!-- Add to Playlist Button -->
+    <a class="menu-button" id="show-dropdown-btn">Add to Playlist</a>
+
+    <!-- Hidden Dropdown -->
+    <select id="playlist-dropdown">
+        <option value="" disabled selected>Select a playlist</option>
+        {% for pl in playlists %}
+            <option value="{{ pl }}">{{ pl }}</option>
+        {% endfor %}
+    </select>
 
     <!-- Back Button -->
-    <a href="/files" class="btn">Back to Files</a>
+    <a class="menu-button" href="/files">Back to Files</a>
 </div>
 
 <script>
-function addToPlaylist() {
-    const playlist = document.getElementById("playlist-dropdown").value;
+const showBtn = document.getElementById('show-dropdown-btn');
+const dropdown = document.getElementById('playlist-dropdown');
+
+showBtn.onclick = () => {
+    dropdown.style.display = 'block';
+    dropdown.focus(); // Focus so that it opens the selection on mobile
+};
+
+// Trigger add-to-playlist immediately when an option is selected
+dropdown.onchange = () => {
+    const playlist = dropdown.value;
+    if (!playlist) return;
     fetch("/playlist/add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ playlist: playlist, file: "{{ filename }}" })
     })
     .then(resp => resp.json())
-    .then(data => alert(data.message))
-    .catch(err => alert("Failed to add to playlist"));
-}
+    .then(data => {
+        alert(data.message);
+        dropdown.style.display = 'none';
+        dropdown.selectedIndex = 0; // reset
+    })
+    .catch(err => {
+        alert("Failed to add to playlist");
+        dropdown.style.display = 'none';
+        dropdown.selectedIndex = 0; 
+    });
+};
 </script>
 </body>
 </html>
