@@ -15,7 +15,7 @@
         background: radial-gradient(circle at center, #d0d0d0 0%, #1c1c1c 100%);
     }
     .container { 
-        background-color: #800020; /* burgundy container */
+        background-color: #800020;
         padding: 30px; 
         border-radius: 20px;
         text-align: center; 
@@ -24,39 +24,18 @@
         color: white;
         box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
-    h2 { 
-        margin-bottom: 20px; 
-        font-size: 24px;
-    }
+    h2 { margin-bottom: 20px; font-size: 24px; }
     input[type="text"] { 
-        width: 100%; 
-        padding: 12px; 
-        margin-bottom: 10px; 
-        border-radius: 8px; 
-        border: 1px solid #ccc; 
-        font-size: 16px; 
+        width: 100%; padding: 12px; margin-bottom: 10px; 
+        border-radius: 8px; border: 1px solid #ccc; font-size: 16px; 
         box-sizing: border-box; 
     }
-    .file-list { 
-        margin-top: 10px; 
-    }
+    .file-list { margin-top: 10px; }
     .file-item { 
-        margin-bottom: 10px; 
-        word-wrap: break-word; 
-        cursor: pointer; 
-        color: #aaffff; 
+        margin-bottom: 10px; word-wrap: break-word; 
+        cursor: pointer; color: #aaffff; 
     }
-    .file-item:hover { 
-        text-decoration: underline; 
-    }
-    video { 
-        width: 100%; 
-        margin-top: 10px; 
-        border-radius: 8px; 
-        display: none; 
-    }
-
-    /* Unified button style */
+    .file-item:hover { text-decoration: underline; }
     .btn {
         display: block;
         width: 80%;          
@@ -75,9 +54,7 @@
         text-align: center;
         transition: background-color 0.2s ease;
     }
-    .btn:hover { 
-        background-color: #444444; 
-    }
+    .btn:hover { background-color: #444444; }
 </style>
 </head>
 <body>
@@ -88,34 +65,17 @@
     <input type="text" id="search" placeholder="Search downloaded videos" value="{{ query }}">
     <div class="file-list" id="file-list">
         {% for file in files %}
-            <div class="file-item" onclick="playVideo('{{ file }}')">{{ file }}</div>
+            <div class="file-item" onclick="window.location='/video/{{ file }}'">
+                {{ file }}
+            </div>
         {% endfor %}
     </div>
 
-    <!-- Video player -->
-    <video id="player" controls></video>
-
-    <!-- Navigation buttons -->
     <a href="/download" class="btn">Back to Download Page</a>
     <a href="/" class="btn">Home</a>
 </div>
 
 <script>
-const player = document.getElementById("player");
-
-// Play the clicked video
-function playVideo(filename) {
-    player.style.display = "block";
-    const url = `http://10.0.0.1:8080/video/${encodeURIComponent(filename)}`;
-    player.src = url;
-    player.load();
-    player.play().catch(err => {
-        console.error("Playback failed:", err);
-        alert("Failed to play video. Make sure the file exists and is accessible.");
-    });
-}
-
-
 // Live search filtering
 document.getElementById("search").addEventListener("input", function() {
     const query = this.value.toLowerCase();

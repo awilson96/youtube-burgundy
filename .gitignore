@@ -3,6 +3,7 @@
 *.jpeg
 *.jpg 
 
+*.json
 *.vscode
 *.pyc
 *__pycache__

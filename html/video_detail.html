@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Watch Video - {{ filename }}</title>
+<style>
+    body { 
+        font-family: Arial, sans-serif; 
+        margin: 0; 
+        padding: 0; 
+        display: flex; 
+        justify-content: center; 
+        align-items: center; 
+        min-height: 100vh; 
+        background: radial-gradient(circle at center, #d0d0d0 0%, #1c1c1c 100%);
+    }
+    .container { 
+        background-color: #800020;
+        padding: 20px; border-radius: 20px;
+        width: 90%; max-width: 400px; color: white;
+        text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    video { width: 100%; border-radius: 8px; }
+    select, button { 
+        margin-top: 10px; width: 100%; padding: 10px; 
+        border-radius: 8px; border: none; font-size: 16px; 
+        cursor: pointer; 
+    }
+    button { background-color: #2c2c2c; color: white; border: 1px solid white; font-weight: bold; }
+    button:hover { background-color: #444; }
+    .btn { margin-top: 10px; display: block; text-decoration: none; color: white; font-weight: bold; }
+</style>
+</head>
+<body>
+<div class="container">
+    <h2>{{ filename }}</h2>
+
+    <video id="player" controls>
+        <source src="http://10.0.0.1:8080/video/{{ filename | urlencode }}" type="video/mp4">
+        Your browser does not support HTML5 video.
+    </video>
+
+    <div>
+        <select id="playlist-dropdown">
+            {% for pl in playlists %}
+                <option value="{{ pl }}">{{ pl }}</option>
+            {% endfor %}
+        </select>
+        <button onclick="addToPlaylist()">Add to Playlist</button>
+    </div>
+
+    <a href="/files" class="btn">Back to Files</a>
+</div>
+
+<script>
+function addToPlaylist() {
+    const playlist = document.getElementById("playlist-dropdown").value;
+    fetch("/playlist/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ playlist: playlist, file: "{{ filename }}" })
+    })
+    .then(resp => resp.json())
+    .then(data => alert(data.message))
+    .catch(err => alert("Failed to add to playlist"));
+}
+</script>
+</body>
+</html>
