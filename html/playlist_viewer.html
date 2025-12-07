@@ -14,38 +14,48 @@
         min-height: 100vh; 
         background: radial-gradient(circle at center, #d0d0d0 0%, #1c1c1c 100%);
     }
+
     .container { 
         background-color: #800020;
-        padding: 20px; 
+        padding: 40px 20px; 
         border-radius: 20px;
         width: 90%; 
-        max-width: 500px; 
+        max-width: 400px; 
         color: white;
         text-align: center; 
         box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+
+        display: flex;
+        flex-direction: column;
+        align-items: center;
     }
 
-    h2 { margin-bottom: 20px; font-size: 24px; }
+    h2 { 
+        margin-bottom: 20px; 
+        font-weight: bold; 
+        font-size: 1.8em; 
+    }
 
-    /* Buttons styled like index.html menu buttons */
+    /* Buttons matching index.html */
     .menu-button {
         display: block;
-        width: 80%;
+        width: 80%;          
         max-width: 300px;
         padding: 15px;
-        margin: 10px auto;
+        margin: 10px auto;   
         font-size: 18px;
-        border: 1px solid white;
+        border: 1px solid white; 
         border-radius: 10px;
-        background-color: #2c2c2c;
+        background-color: #2c2c2c; 
         color: white;
         cursor: pointer;
         text-decoration: none;
         font-weight: bold;
         transition: background-color 0.2s ease;
+        text-align: center;
     }
     .menu-button:hover {
-        background-color: #444444;
+        background-color: #444444; 
     }
 
     /* Hidden dropdown */
@@ -66,13 +76,15 @@
     /* Scrollable file list container */
     .file-list-container {
         max-height: 300px;
+        width: 80%;
+        max-width: 300px;
         overflow-y: auto;
         margin-top: 20px;
         padding: 10px;
         background-color: #2c2c2c;
         border: 1px solid white;
         border-radius: 10px;
-        display: none; /* Hidden until playlist selected */
+        display: none;
     }
 
     .file-item {
@@ -82,6 +94,23 @@
         color: #aaffff;
     }
     .file-item:hover { text-decoration: underline; }
+
+    @media (max-width: 500px) {
+        .container {
+            padding: 30px 15px;
+        }
+        h2 {
+            font-size: 1.5em;
+        }
+        .menu-button {
+            font-size: 16px;
+            padding: 12px;
+        }
+        #playlist-dropdown, .file-list-container {
+            width: 100%;
+            max-width: none;
+        }
+    }
 </style>
 </head>
 <body>
@@ -89,7 +118,7 @@
     <h2>Playlist Viewer</h2>
 
     <!-- Select Playlist Button -->
-    <button id="show-dropdown-btn" class="menu-button">Select Playlist</button>
+    <a class="menu-button" id="show-dropdown-btn">Select Playlist</a>
 
     <!-- Hidden Dropdown -->
     <select id="playlist-dropdown">
@@ -102,7 +131,7 @@
     <!-- Scrollable list of files in the selected playlist -->
     <div class="file-list-container" id="playlist-files"></div>
 
-    <!-- Back to Menu Button -->
+    <!-- Back Button -->
     <a href="/" class="menu-button">Back to Menu</a>
 </div>
 
@@ -111,13 +140,11 @@ const showBtn = document.getElementById('show-dropdown-btn');
 const dropdown = document.getElementById('playlist-dropdown');
 const fileContainer = document.getElementById('playlist-files');
 
-// Show dropdown on button click
 showBtn.onclick = () => {
     dropdown.style.display = 'block';
     dropdown.focus();
 };
 
-// Load playlist files immediately on selection
 dropdown.onchange = () => {
     const playlist = dropdown.value;
     if (!playlist) return;
@@ -125,15 +152,12 @@ dropdown.onchange = () => {
     fetch(`/playlist/files?name=${encodeURIComponent(playlist)}`)
         .then(resp => resp.json())
         .then(data => {
-            fileContainer.innerHTML = ""; // Clear previous files
-
+            fileContainer.innerHTML = "";
             if (!data.songs || data.songs.length === 0) {
                 fileContainer.innerHTML = "<p>No files in this playlist.</p>";
                 fileContainer.style.display = 'block';
                 return;
             }
-
-            // Add files to container
             data.songs.forEach(file => {
                 const div = document.createElement("div");
                 div.className = "file-item";
@@ -141,8 +165,7 @@ dropdown.onchange = () => {
                 div.onclick = () => { window.location = `/video/${encodeURIComponent(file)}`; };
                 fileContainer.appendChild(div);
             });
-
-            fileContainer.style.display = 'block'; // Show the list
+            fileContainer.style.display = 'block';
         })
         .catch(err => {
             console.error(err);
