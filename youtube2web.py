@@ -1,11 +1,12 @@
 from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 
 from youtube2mp3 import YoutubeSegmentDownloader
 import os
 import json
+import random
 
 app = FastAPI()
 
@@ -261,3 +262,11 @@ async def delete_playlist(request: Request):
         return JSONResponse({"success": True, "message": f"Playlist '{playlist_name}' deleted"})
     except Exception as e:
         return JSONResponse({"success": False, "message": f"Error deleting playlist: {e}"}, status_code=500)
+    
+@app.get("/playlist/details", response_class=HTMLResponse)
+def playlist_details(request: Request, name: str):
+    """Render playlist details page for a single playlist"""
+    return templates.TemplateResponse("playlist_details.html", {
+        "request": request,
+        "playlist_name": name
+    })
