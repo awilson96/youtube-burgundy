@@ -219,3 +219,22 @@ async def remove_from_playlist(request: Request):
         json.dump(playlist_data, f, indent=4)
 
     return JSONResponse({"success": True, "message": f"Removed {file_name} from {playlist_name}"})
+
+@app.post("/playlist/create")
+async def create_playlist(request: Request):
+    data = await request.json()
+    playlist_name = data.get("name")
+
+    if not playlist_name:
+        return JSONResponse({"success": False, "message": "Playlist name required"}, status_code=400)
+
+    playlist_path = os.path.join(PLAYLIST_FOLDER, f"{playlist_name}.json")
+    if os.path.exists(playlist_path):
+        return JSONResponse({"success": False, "message": "Playlist already exists"}, status_code=400)
+
+    # Create empty playlist
+    playlist_data = {"name": playlist_name, "songs": []}
+    with open(playlist_path, "w", encoding="utf-8") as f:
+        json.dump(playlist_data, f, indent=4)
+
+    return JSONResponse({"success": True, "message": f"Playlist {playlist_name} created"})

@@ -142,6 +142,9 @@
     <!-- Scrollable list of files in the selected playlist -->
     <div class="file-list-container" id="playlist-files"></div>
 
+    <!-- Create Playlist Button -->
+    <a href="#" class="menu-button" id="create-playlist-btn">Create Playlist</a>
+
     <!-- Back Button -->
     <a href="/" class="menu-button">Back to Menu</a>
 </div>
@@ -150,6 +153,7 @@
 const showBtn = document.getElementById('show-dropdown-btn');
 const dropdown = document.getElementById('playlist-dropdown');
 const fileContainer = document.getElementById('playlist-files');
+const createBtn = document.getElementById('create-playlist-btn');
 
 /* Show dropdown when button clicked */
 showBtn.onclick = () => {
@@ -239,6 +243,39 @@ function deleteFromPlaylist(playlist, file, divElement) {
         alert("Error removing song");
     });
 }
+
+/* Create Playlist button handler */
+createBtn.onclick = () => {
+    const playlistName = prompt("Enter new playlist name:");
+    if (!playlistName) return;
+
+    fetch("/playlist/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: playlistName })
+    })
+    .then(resp => resp.json())
+    .then(data => {
+        if (data.success) {
+            alert(`Playlist "${playlistName}" created successfully!`);
+            // Add the new playlist to dropdown
+            const option = document.createElement("option");
+            option.value = playlistName;
+            option.textContent = playlistName;
+            dropdown.appendChild(option);
+
+            // Automatically select and load the new playlist
+            dropdown.value = playlistName;
+            loadPlaylist(playlistName);
+        } else {
+            alert("Failed to create playlist: " + data.message);
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Error creating playlist");
+    });
+};
 </script>
 
 </body>
