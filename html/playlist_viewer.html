@@ -24,7 +24,6 @@
         color: white;
         text-align: center; 
         box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -36,7 +35,6 @@
         font-size: 1.8em; 
     }
 
-    /* Buttons matching index.html */
     .menu-button {
         display: block;
         width: 80%;          
@@ -58,7 +56,6 @@
         background-color: #444444; 
     }
 
-    /* Hidden dropdown */
     #playlist-dropdown {
         display: none;
         margin-top: 10px;
@@ -73,7 +70,6 @@
         cursor: pointer;
     }
 
-    /* Scrollable file list container */
     .file-list-container {
         max-height: 300px;
         width: 80%;
@@ -92,8 +88,23 @@
         word-wrap: break-word; 
         cursor: pointer; 
         color: #aaffff;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
-    .file-item:hover { text-decoration: underline; }
+
+    .delete-btn {
+        background-color: #aa2222;
+        border: none;
+        border-radius: 5px;
+        color: white;
+        padding: 3px 8px;
+        cursor: pointer;
+        font-size: 12px;
+    }
+    .delete-btn:hover {
+        background-color: #ff4444;
+    }
 
     @media (max-width: 500px) {
         .container {
@@ -140,43 +151,33 @@ const showBtn = document.getElementById('show-dropdown-btn');
 const dropdown = document.getElementById('playlist-dropdown');
 const fileContainer = document.getElementById('playlist-files');
 
-/* ------------------------------
-   Show dropdown when button clicked
---------------------------------*/
+/* Show dropdown when button clicked */
 showBtn.onclick = () => {
     dropdown.style.display = 'block';
     dropdown.focus();
 };
 
-/* ------------------------------
-   Load selected playlist manually
---------------------------------*/
+/* Load selected playlist manually */
 dropdown.onchange = () => {
     const playlist = dropdown.value;
     if (!playlist) return;
-
     loadPlaylist(playlist);
-
     dropdown.style.display = 'none';
     dropdown.selectedIndex = 0;
 };
 
-/* ------------------------------
-   Auto-load playlist from URL (?name=XYZ)
---------------------------------*/
+/* Auto-load playlist from URL (?select=XYZ) */
 const urlParams = new URLSearchParams(window.location.search);
-const preselect = urlParams.get("name");  // keep 'name' to match backend
-
+const preselect = urlParams.get("select");
 if (preselect) {
+    dropdown.style.display = 'block';
     dropdown.value = preselect;
-    loadPlaylist(preselect);
+    dropdown.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
-/* ------------------------------
-   Fetch playlist files
---------------------------------*/
+/* Fetch playlist files and render them */
 function loadPlaylist(playlist) {
-    fetch(`/playlist/files?name=${encodeURIComponent(playlist)}`) // keep 'name'
+    fetch(`/playlist/files?name=${encodeURIComponent(playlist)}`)
         .then(resp => resp.json())
         .then(data => {
             fileContainer.innerHTML = "";
@@ -190,10 +191,25 @@ function loadPlaylist(playlist) {
             data.songs.forEach(file => {
                 const div = document.createElement("div");
                 div.className = "file-item";
-                div.textContent = file;
-                div.onclick = () => { 
-                    window.location = `/video/${encodeURIComponent(file)}`; 
+
+                const span = document.createElement("span");
+                span.textContent = file;
+
+                const delBtn = document.createElement("button");
+                delBtn.className = "delete-btn";
+                delBtn.textContent = "Delete";
+                delBtn.onclick = (e) => {
+                    e.stopPropagation(); // prevent click on file link
+                    deleteFromPlaylist(playlist, file, div);
                 };
+
+                div.appendChild(span);
+                div.appendChild(delBtn);
+
+                div.onclick = () => {
+                    window.location = `/video/${encodeURIComponent(file)}`;
+                };
+
                 fileContainer.appendChild(div);
             });
         })
@@ -201,6 +217,27 @@ function loadPlaylist(playlist) {
             console.error(err);
             alert("Failed to load playlist files");
         });
+}
+
+/* Delete song from playlist JSON */
+function deleteFromPlaylist(playlist, file, divElement) {
+    fetch("/playlist/remove", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ playlist: playlist, file: file })
+    })
+    .then(resp => resp.json())
+    .then(data => {
+        if (data.success) {
+            divElement.remove(); // remove from DOM
+        } else {
+            alert("Failed to remove song: " + data.message);
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Error removing song");
+    });
 }
 </script>
 

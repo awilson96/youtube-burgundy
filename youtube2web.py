@@ -192,3 +192,30 @@ async def add_to_playlist(request: Request):
         json.dump(playlist_data, f, indent=4)
 
     return JSONResponse({"success": True, "message": f"Added {file_name} to {playlist_name}"})
+
+@app.post("/playlist/remove")
+async def remove_from_playlist(request: Request):
+    data = await request.json()
+    playlist_name = data.get("playlist")
+    file_name = data.get("file")
+
+    if not playlist_name or not file_name:
+        return JSONResponse({"success": False, "message": "Missing playlist or file"}, status_code=400)
+
+    playlist_path = os.path.join(PLAYLIST_FOLDER, f"{playlist_name}.json")
+
+    if not os.path.exists(playlist_path):
+        return JSONResponse({"success": False, "message": "Playlist not found"}, status_code=404)
+
+    with open(playlist_path, "r", encoding="utf-8") as f:
+        playlist_data = json.load(f)
+
+    if file_name not in playlist_data.get("songs", []):
+        return JSONResponse({"success": False, "message": "File not in playlist"}, status_code=404)
+
+    playlist_data["songs"].remove(file_name)
+
+    with open(playlist_path, "w", encoding="utf-8") as f:
+        json.dump(playlist_data, f, indent=4)
+
+    return JSONResponse({"success": True, "message": f"Removed {file_name} from {playlist_name}"})
