@@ -56,18 +56,27 @@
         background-color: #444444; 
     }
 
-    #playlist-dropdown {
-        display: none;
-        margin-top: 10px;
+    /* Standardized dropdown style */
+    select.playlist-dropdown {
+        display: none; /* hidden by default */
         width: 80%;
         max-width: 300px;
-        padding: 10px;
-        border-radius: 8px;
+        margin: 10px auto;
+        padding: 12px 10px;
         font-size: 16px;
-        border: 1px solid #ccc;
-        color: black;
-        background-color: white;
+        border-radius: 10px;
+        border: 1px solid white;
+        background-color: #2c2c2c;
+        color: white;
         cursor: pointer;
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        text-align: center;
+    }
+
+    select.playlist-dropdown option {
+        color: black; /* readable text */
     }
 
     .file-list-container {
@@ -117,7 +126,7 @@
             font-size: 16px;
             padding: 12px;
         }
-        #playlist-dropdown, .file-list-container {
+        select.playlist-dropdown, .file-list-container {
             width: 100%;
             max-width: none;
         }
@@ -130,9 +139,7 @@
 
     <!-- Select Playlist Button -->
     <a class="menu-button" id="show-dropdown-btn">Select Playlist</a>
-
-    <!-- Hidden Dropdown -->
-    <select id="playlist-dropdown">
+    <select id="playlist-dropdown" class="playlist-dropdown">
         <option value="" disabled selected>Select a playlist</option>
         {% for pl in playlists %}
             <option value="{{ pl }}">{{ pl }}</option>
@@ -145,6 +152,15 @@
     <!-- Create Playlist Button -->
     <a href="#" class="menu-button" id="create-playlist-btn">Create Playlist</a>
 
+    <!-- Delete Playlist Button -->
+    <a href="#" class="menu-button" id="delete-playlist-btn">Delete Playlist</a>
+    <select id="delete-playlist-dropdown" class="playlist-dropdown">
+        <option value="" disabled selected>Select a playlist to delete</option>
+        {% for pl in playlists %}
+            <option value="{{ pl }}">{{ pl }}</option>
+        {% endfor %}
+    </select>
+
     <!-- Back Button -->
     <a href="/" class="menu-button">Back to Menu</a>
 </div>
@@ -154,11 +170,29 @@ const showBtn = document.getElementById('show-dropdown-btn');
 const dropdown = document.getElementById('playlist-dropdown');
 const fileContainer = document.getElementById('playlist-files');
 const createBtn = document.getElementById('create-playlist-btn');
+const deleteBtn = document.getElementById('delete-playlist-btn');
+const deleteDropdown = document.getElementById('delete-playlist-dropdown');
 
-/* Show dropdown when button clicked */
+/* Utility to hide all dropdowns */
+function hideAllDropdowns() {
+    dropdown.style.display = 'none';
+    deleteDropdown.style.display = 'none';
+}
+
+/* Show/hide respective dropdown when button clicked */
 showBtn.onclick = () => {
-    dropdown.style.display = 'block';
-    dropdown.focus();
+    if (dropdown.style.display === 'block') {
+        dropdown.style.display = 'none';
+    } else {
+        hideAllDropdowns();
+        dropdown.style.display = 'block';
+        dropdown.focus();
+    }
+};
+
+deleteBtn.onclick = () => {
+    hideAllDropdowns();
+    deleteDropdown.style.display = 'block';
 };
 
 /* Load selected playlist manually */
@@ -169,15 +203,6 @@ dropdown.onchange = () => {
     dropdown.style.display = 'none';
     dropdown.selectedIndex = 0;
 };
-
-/* Auto-load playlist from URL (?select=XYZ) */
-const urlParams = new URLSearchParams(window.location.search);
-const preselect = urlParams.get("select");
-if (preselect) {
-    dropdown.style.display = 'block';
-    dropdown.value = preselect;
-    dropdown.dispatchEvent(new Event('change', { bubbles: true }));
-}
 
 /* Fetch playlist files and render them */
 function loadPlaylist(playlist) {
@@ -203,7 +228,7 @@ function loadPlaylist(playlist) {
                 delBtn.className = "delete-btn";
                 delBtn.textContent = "Delete";
                 delBtn.onclick = (e) => {
-                    e.stopPropagation(); // prevent click on file link
+                    e.stopPropagation();
                     deleteFromPlaylist(playlist, file, div);
                 };
 
@@ -233,7 +258,7 @@ function deleteFromPlaylist(playlist, file, divElement) {
     .then(resp => resp.json())
     .then(data => {
         if (data.success) {
-            divElement.remove(); // remove from DOM
+            divElement.remove();
         } else {
             alert("Failed to remove song: " + data.message);
         }
@@ -246,6 +271,7 @@ function deleteFromPlaylist(playlist, file, divElement) {
 
 /* Create Playlist button handler */
 createBtn.onclick = () => {
+    hideAllDropdowns();
     const playlistName = prompt("Enter new playlist name:");
     if (!playlistName) return;
 
@@ -258,13 +284,13 @@ createBtn.onclick = () => {
     .then(data => {
         if (data.success) {
             alert(`Playlist "${playlistName}" created successfully!`);
-            // Add the new playlist to dropdown
-            const option = document.createElement("option");
-            option.value = playlistName;
-            option.textContent = playlistName;
-            dropdown.appendChild(option);
+            const option1 = document.createElement("option");
+            option1.value = playlistName;
+            option1.textContent = playlistName;
+            dropdown.appendChild(option1);
+            const option2 = option1.cloneNode(true);
+            deleteDropdown.appendChild(option2);
 
-            // Automatically select and load the new playlist
             dropdown.value = playlistName;
             loadPlaylist(playlistName);
         } else {
@@ -276,6 +302,45 @@ createBtn.onclick = () => {
         alert("Error creating playlist");
     });
 };
+
+/* Delete Playlist functionality */
+deleteDropdown.onchange = () => {
+    const playlist = deleteDropdown.value;
+    if (!playlist) return;
+
+    if (!confirm(`Are you sure you want to delete playlist "${playlist}"? This cannot be undone.`)) return;
+
+    fetch("/playlist/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: playlist })
+    })
+    .then(resp => resp.json())
+    .then(data => {
+        if (data.success) {
+            alert(`Playlist "${playlist}" deleted successfully.`);
+            [...deleteDropdown.options].find(opt => opt.value === playlist)?.remove();
+            [...dropdown.options].find(opt => opt.value === playlist)?.remove();
+            fileContainer.innerHTML = "";
+        } else {
+            alert("Failed to delete playlist: " + data.message);
+        }
+        deleteDropdown.selectedIndex = 0;
+        deleteDropdown.style.display = 'none';
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Error deleting playlist");
+        deleteDropdown.style.display = 'none';
+    });
+};
+
+/* Clicking anywhere else hides dropdowns */
+document.addEventListener('click', (e) => {
+    if (![showBtn, dropdown, deleteBtn, deleteDropdown].includes(e.target)) {
+        hideAllDropdowns();
+    }
+});
 </script>
 
 </body>
