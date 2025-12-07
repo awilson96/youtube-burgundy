@@ -56,9 +56,8 @@
         background-color: #444444; 
     }
 
-    /* Standardized dropdown style */
     select.playlist-dropdown {
-        display: none; /* hidden by default */
+        display: none;
         width: 80%;
         max-width: 300px;
         margin: 10px auto;
@@ -70,15 +69,11 @@
         color: white;
         cursor: pointer;
         appearance: none;
-        -webkit-appearance: none;
-        -moz-appearance: none;
         text-align: center;
     }
+    select.playlist-dropdown option { color: black; }
 
-    select.playlist-dropdown option {
-        color: black; /* readable text */
-    }
-
+    /* Table styling */
     .file-list-container {
         max-height: 300px;
         width: 80%;
@@ -91,16 +86,19 @@
         border-radius: 10px;
         display: none;
     }
-
-    .file-item {
-        margin-bottom: 10px; 
-        word-wrap: break-word; 
-        cursor: pointer; 
-        color: #aaffff;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+    table {
+        width: 100%;
+        border-collapse: collapse;
     }
+    th, td {
+        padding: 8px;
+        text-align: left;
+        border-bottom: 1px solid #444;
+        color: #aaffff;
+        word-wrap: break-word;
+    }
+    th { background-color: #444; font-weight: bold; }
+    tr:hover td { text-decoration: underline; cursor: pointer; }
 
     .delete-btn {
         background-color: #aa2222;
@@ -111,25 +109,15 @@
         cursor: pointer;
         font-size: 12px;
     }
-    .delete-btn:hover {
-        background-color: #ff4444;
-    }
+    .delete-btn:hover { background-color: #ff4444; }
 
     @media (max-width: 500px) {
         .container {
             padding: 30px 15px;
         }
-        h2 {
-            font-size: 1.5em;
-        }
-        .menu-button {
-            font-size: 16px;
-            padding: 12px;
-        }
-        select.playlist-dropdown, .file-list-container {
-            width: 100%;
-            max-width: none;
-        }
+        h2 { font-size: 1.5em; }
+        .menu-button { font-size: 16px; padding: 12px; }
+        select.playlist-dropdown, .file-list-container { width: 100%; max-width: none; }
     }
 </style>
 </head>
@@ -137,31 +125,25 @@
 <div class="container">
     <h2>Playlist Viewer</h2>
 
-    <!-- Select Playlist Button -->
     <a class="menu-button" id="show-dropdown-btn">Select Playlist</a>
     <select id="playlist-dropdown" class="playlist-dropdown">
-        <option value="" disabled selected>Select a playlist</option>
+        <option value="" disabled selected></option>
         {% for pl in playlists %}
             <option value="{{ pl }}">{{ pl }}</option>
         {% endfor %}
     </select>
 
-    <!-- Scrollable list of files in the selected playlist -->
     <div class="file-list-container" id="playlist-files"></div>
 
-    <!-- Create Playlist Button -->
     <a href="#" class="menu-button" id="create-playlist-btn">Create Playlist</a>
-
-    <!-- Delete Playlist Button -->
     <a href="#" class="menu-button" id="delete-playlist-btn">Delete Playlist</a>
     <select id="delete-playlist-dropdown" class="playlist-dropdown">
-        <option value="" disabled selected>Select a playlist to delete</option>
+        <option value="" disabled selected></option>
         {% for pl in playlists %}
             <option value="{{ pl }}">{{ pl }}</option>
         {% endfor %}
     </select>
 
-    <!-- Back Button -->
     <a href="/" class="menu-button">Back to Menu</a>
 </div>
 
@@ -173,13 +155,11 @@ const createBtn = document.getElementById('create-playlist-btn');
 const deleteBtn = document.getElementById('delete-playlist-btn');
 const deleteDropdown = document.getElementById('delete-playlist-dropdown');
 
-/* Utility to hide all dropdowns */
 function hideAllDropdowns() {
     dropdown.style.display = 'none';
     deleteDropdown.style.display = 'none';
 }
 
-/* Show/hide respective dropdown when button clicked */
 showBtn.onclick = () => {
     if (dropdown.style.display === 'block') {
         dropdown.style.display = 'none';
@@ -195,7 +175,6 @@ deleteBtn.onclick = () => {
     deleteDropdown.style.display = 'block';
 };
 
-/* Load selected playlist manually */
 dropdown.onchange = () => {
     const playlist = dropdown.value;
     if (!playlist) return;
@@ -204,7 +183,6 @@ dropdown.onchange = () => {
     dropdown.selectedIndex = 0;
 };
 
-/* Fetch playlist files and render them */
 function loadPlaylist(playlist) {
     fetch(`/playlist/files?name=${encodeURIComponent(playlist)}`)
         .then(resp => resp.json())
@@ -217,30 +195,49 @@ function loadPlaylist(playlist) {
                 return;
             }
 
+            // Build table
+            const table = document.createElement("table");
+            const thead = document.createElement("thead");
+            const headerRow = document.createElement("tr");
+            const thSong = document.createElement("th"); thSong.textContent = "Song";
+            const thArtist = document.createElement("th"); thArtist.textContent = "Artist";
+            headerRow.appendChild(thSong);
+            headerRow.appendChild(thArtist);
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+            const tbody = document.createElement("tbody");
+
             data.songs.forEach(file => {
-                const div = document.createElement("div");
-                div.className = "file-item";
+                // Remove .mp4 and split by " - "
+                const nameParts = file.endsWith('.mp4') ? file.slice(0, -4).split(' - ') : file.split(' - ');
+                const song = nameParts[0] || '';
+                const artist = nameParts[1] || '';
 
-                const span = document.createElement("span");
-                span.textContent = file;
+                const tr = document.createElement("tr");
+                tr.onclick = () => { window.location = `/video/${encodeURIComponent(file)}`; };
 
+                const tdSong = document.createElement("td"); tdSong.textContent = song;
+                const tdArtist = document.createElement("td"); tdArtist.textContent = artist;
+
+                // Delete button in last column
                 const delBtn = document.createElement("button");
                 delBtn.className = "delete-btn";
                 delBtn.textContent = "Delete";
                 delBtn.onclick = (e) => {
                     e.stopPropagation();
-                    deleteFromPlaylist(playlist, file, div);
+                    deleteFromPlaylist(playlist, file, tr);
                 };
 
-                div.appendChild(span);
-                div.appendChild(delBtn);
+                tr.appendChild(tdSong);
+                tr.appendChild(tdArtist);
+                tr.appendChild(delBtn);
 
-                div.onclick = () => {
-                    window.location = `/video/${encodeURIComponent(file)}`;
-                };
-
-                fileContainer.appendChild(div);
+                tbody.appendChild(tr);
             });
+
+            table.appendChild(tbody);
+            fileContainer.appendChild(table);
         })
         .catch(err => {
             console.error(err);
@@ -248,8 +245,7 @@ function loadPlaylist(playlist) {
         });
 }
 
-/* Delete song from playlist JSON */
-function deleteFromPlaylist(playlist, file, divElement) {
+function deleteFromPlaylist(playlist, file, rowElement) {
     fetch("/playlist/remove", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -258,7 +254,7 @@ function deleteFromPlaylist(playlist, file, divElement) {
     .then(resp => resp.json())
     .then(data => {
         if (data.success) {
-            divElement.remove();
+            rowElement.remove();
         } else {
             alert("Failed to remove song: " + data.message);
         }
@@ -269,7 +265,7 @@ function deleteFromPlaylist(playlist, file, divElement) {
     });
 }
 
-/* Create Playlist button handler */
+// Create and delete playlist code remains unchanged
 createBtn.onclick = () => {
     hideAllDropdowns();
     const playlistName = prompt("Enter new playlist name:");
@@ -303,7 +299,6 @@ createBtn.onclick = () => {
     });
 };
 
-/* Delete Playlist functionality */
 deleteDropdown.onchange = () => {
     const playlist = deleteDropdown.value;
     if (!playlist) return;
@@ -335,13 +330,11 @@ deleteDropdown.onchange = () => {
     });
 };
 
-/* Clicking anywhere else hides dropdowns */
 document.addEventListener('click', (e) => {
     if (![showBtn, dropdown, deleteBtn, deleteDropdown].includes(e.target)) {
         hideAllDropdowns();
     }
 });
 </script>
-
 </body>
 </html>
