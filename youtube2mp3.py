@@ -1,13 +1,23 @@
 import yt_dlp
 import os
 import subprocess
+import json
 
 class YoutubeSegmentDownloader:
     SEGMENT_DURATION = 30 * 60  # 30 minutes in seconds
 
-    def __init__(self):
+    def __init__(self, config_path="config.json"):
         """Initialize the downloader."""
-        self.download_path = "./downloads"  # Folder to save downloaded videos
+        if os.path.exists(config_path):
+            with open(config_path, "r") as f:
+                config = json.load(f)
+            self.download_path = config.get("download_path", "./downloads")
+            print(f"Download path selected: {self.download_path}")
+        else:
+            raise RuntimeError("Error: config.json not found. Re-run the setup.py script and ensure you enter a valid path which has read/write/execute permissions.")
+
+    def get_download_path(self):
+        return self.download_path
 
     def get_video_duration(self, video_url):
         """Retrieve the video duration in seconds."""

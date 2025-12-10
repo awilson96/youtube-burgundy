@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse
 
 from youtube2mp3 import YoutubeSegmentDownloader
 import os
@@ -14,7 +14,7 @@ app = FastAPI()
 downloader = YoutubeSegmentDownloader()
 
 # Set paths
-DOWNLOAD_FOLDER = r"D:\Music"
+DOWNLOAD_FOLDER = downloader.get_download_path()
 PLAYLIST_FOLDER = "playlists"
 
 os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
