@@ -54,6 +54,33 @@
         background-color: black;
         margin-bottom: 15px;
     }
+
+    /* Download page button style applied to dropdown */
+    .btn {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 80%;
+        max-width: 300px;
+        height: 48px;
+        padding: 0 12px;
+        font-size: 16px;
+        border-radius: 10px;
+        border: 1px solid white;
+        background-color: #2c2c2c;
+        color: white;
+        text-align: center;
+        text-align-last: center;
+        -moz-text-align-last: center; /* Firefox */
+        box-sizing: border-box;
+        margin: 10px auto; /* spacing */
+        cursor: pointer;
+    }
+
+    .btn option {
+        color: black;
+    }
+
     .menu-button {
         display: block;
         width: 80%;          
@@ -75,19 +102,6 @@
         background-color: #444444; 
     }
 
-    #playlist-dropdown {
-        display: none;
-        margin-top: 10px;
-        width: 100%;
-        padding: 10px;
-        border-radius: 8px;
-        font-size: 16px;
-        border: 1px solid #ccc;
-        color: black;
-        background-color: white;
-        cursor: pointer;
-    }
-
     @media (max-width: 500px) {
         .container {
             padding: 30px 15px;
@@ -99,6 +113,26 @@
             font-size: 16px;
             padding: 12px;
         }
+    }
+
+    /* Toast styling */
+    .toast {
+        position: fixed; 
+        top: 20px;                
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #333;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 10px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.4s ease;
+        z-index: 1000;            
+    }
+    .toast.show {
+        opacity: 1;
+        pointer-events: auto;
     }
 </style>
 </head>
@@ -124,29 +158,26 @@
         Your browser does not support HTML5 video.
     </video>
 
-    <a class="menu-button" id="show-dropdown-btn">Add to Playlist</a>
-
-    <select id="playlist-dropdown">
-        <option value="" disabled selected>Select a playlist</option>
-        {% for pl in playlists %}
-            <option value="{{ pl }}">{{ pl }}</option>
-        {% endfor %}
-    </select>
+    <!-- Replaced old button + dropdown with styled select like download page -->
+    <form id="playlistForm">
+        <select id="playlist-dropdown" class="btn">
+            <option value="" disabled selected>Add to Playlist</option>
+            {% for pl in playlists %}
+                <option value="{{ pl }}">{{ pl }}</option>
+            {% endfor %}
+        </select>
+    </form>
 
     <a class="menu-button" href="/files">Files</a>
     <a class="menu-button" href="/playlists">Playlists</a>
+
+    <div id="toast" class="toast"></div>
 </div>
 
 <script>
-const showBtn = document.getElementById('show-dropdown-btn');
 const dropdown = document.getElementById('playlist-dropdown');
 const player = document.getElementById('player');
 const durationDiv = document.getElementById('video-duration');
-
-showBtn.onclick = () => {
-    dropdown.style.display = 'block';
-    dropdown.focus();
-};
 
 dropdown.onchange = () => {
     const playlist = dropdown.value;
@@ -158,16 +189,21 @@ dropdown.onchange = () => {
     })
     .then(resp => resp.json())
     .then(data => {
-        alert(data.message);
-        dropdown.style.display = 'none';
+        showToast(data.message);
         dropdown.selectedIndex = 0;
     })
     .catch(err => {
-        alert("Failed to add to playlist");
-        dropdown.style.display = 'none';
+        showToast("Failed to add to playlist");
         dropdown.selectedIndex = 0; 
     });
 };
+
+function showToast(message) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3000);
+}
 
 // Update duration once metadata is loaded
 player.onloadedmetadata = () => {
@@ -181,34 +217,26 @@ player.onloadedmetadata = () => {
 let videoQueue = [];
 let queueIndex = 0;
 
-// Parse queue from URL if exists
 const urlParams = new URLSearchParams(window.location.search);
 const queueParam = urlParams.get('queue');
 if (queueParam) {
-    try {
-        videoQueue = JSON.parse(decodeURIComponent(queueParam));
-    } catch(e) {
-        console.error("Invalid queue", e);
-    }
+    try { videoQueue = JSON.parse(decodeURIComponent(queueParam)); } 
+    catch(e) { console.error("Invalid queue", e); }
 }
 
-// Determine current video index in the queue
 if (videoQueue.length > 0) {
     const currentFile = "{{ filename }}";
     const idx = videoQueue.indexOf(currentFile);
     queueIndex = idx >= 0 ? idx : 0;
 }
 
-// Function to play the next video
 function playNext() {
     queueIndex++;
-    if (queueIndex >= videoQueue.length) return; // End of queue
+    if (queueIndex >= videoQueue.length) return;
     const nextVideo = videoQueue[queueIndex];
-    // Navigate to next video with same queue
     window.location.href = `/video/${encodeURIComponent(nextVideo)}?queue=${encodeURIComponent(JSON.stringify(videoQueue))}`;
 }
 
-// Attach auto-play for next video
 player.onended = playNext;
 </script>
 
