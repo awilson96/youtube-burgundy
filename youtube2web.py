@@ -3,7 +3,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import JSONResponse
 
-from youtube2mp3 import YoutubeSegmentDownloader
+from youtube_downloader import YoutubeSegmentDownloader
 import os
 import json
 import random
