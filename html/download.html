@@ -134,11 +134,20 @@
     <form id="downloadForm" action="/api/download" method="post">
         <input type="text" name="link" placeholder="Enter YouTube URL" required>
         <input type="text" name="filename" placeholder="File name" required>
+
+        <select id="playlist-dropdown" class="btn">
+            <option value="" disabled selected>Select Playlist</option>
+            {% for pl in playlists %}
+                <option value="{{ pl }}">{{ pl }}</option>
+            {% endfor %}
+        </select>
+
         <button type="submit" class="btn">
             Download
             <div class="spinner" id="spinner"></div>
         </button>
     </form>
+
 
     <a href="/files" class="btn">View Downloaded Files</a>
     <a href="/" class="btn">Home</a>

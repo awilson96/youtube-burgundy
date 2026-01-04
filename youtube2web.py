@@ -59,9 +59,11 @@ def index_page(request: Request):
 @app.get("/download", response_class=HTMLResponse)
 def download_page(request: Request, message: str = ""):
     """Render download page with optional message."""
+    playlists = [f[:-5] for f in os.listdir(PLAYLIST_FOLDER) if f.endswith(".json")]
     return templates.TemplateResponse("download.html", {
         "request": request,
-        "message": message
+        "message": message,
+        "playlists": playlists
     })
 
 
