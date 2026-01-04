@@ -1,9 +1,9 @@
-# youtube2mp3
+# youtube-burgundy
 Convert youtube videos to mp3 to extract audio for creating offline playlists
 
 ## Setup
-Github link: `https://github.com/awilson96/youtube2mp3.git`
-1. git clone `https://github.com/awilson96/youtube2mp3.git`
+Github link: `https://github.com/awilson96/youtube-burgundy`
+1. git clone `https://github.com/awilson96/youtube-burgundy`
 2. Install nginx on the same hard drive where you want your downloads folder to be for hosting the downloaded mp4 files. nginx download: `https://nginx.org/en/download.html`. On MacOS this can be done in the terminal with the command `brew install nginx`.
 3. If you don't already have miniconda or anaconda, install at `https://www.anaconda.com/docs/getting-started/miniconda/install`
 4. To create the conda environment run the command `conda env create -f environment.yaml` for Windows and `conda env create -f environment_mac.yaml` for MacOS. Or if you prefer not to use conda see the requirements.txt file for a more concise the list of dependencies needed to run this program and just ensure you have installed these before running.
