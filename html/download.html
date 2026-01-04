@@ -170,7 +170,7 @@ playlistDropdown.addEventListener('change', () => {
     const playlist = playlistDropdown.value;
     if (playlist && !selectedPlaylists.has(playlist)) {
         selectedPlaylists.add(playlist);
-        showToast(`Added "${playlist}" to temporary list`);
+        showToast(`Will add to "${playlist}" on successful download`);
     }
 });
 

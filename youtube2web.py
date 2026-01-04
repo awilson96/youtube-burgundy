@@ -7,6 +7,7 @@ from youtube2mp3 import YoutubeSegmentDownloader
 import os
 import json
 import random
+import asyncio
 
 app = FastAPI()
 
@@ -67,32 +68,12 @@ def download_page(request: Request, message: str = ""):
     })
 
 
-@app.post("/download", response_class=HTMLResponse)
-def download_video(request: Request, link: str = Form(...), filename: str = Form(...)):
-    try:
-        downloaded_file = downloader.download_video(link, filename)
-        if downloaded_file:
-            message = f"Downloaded and ready to play: {os.path.basename(downloaded_file)}"
-        else:
-            message = "Download failed."
-
-        # After download, show the download page again
-        return templates.TemplateResponse("download.html", {
-            "request": request,
-            "message": message
-        })
-
-    except Exception as e:
-        return templates.TemplateResponse("download.html", {
-            "request": request,
-            "message": f"Error: {e}"
-        })
-
-
 @app.post("/api/download")
 async def download_video_api(link: str = Form(...), filename: str = Form(...)):
     try:
-        downloaded_file = downloader.download_video(link, filename)
+        # Run blocking download in a separate thread
+        downloaded_file = await asyncio.to_thread(downloader.download_video, link, filename)
+
         if downloaded_file:
             return JSONResponse({"success": True, "filename": os.path.basename(downloaded_file)})
         else:
