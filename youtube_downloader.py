@@ -50,6 +50,48 @@ class YoutubeSegmentDownloader:
         except Exception as e:
             print(f"Download failed: {e}")
             return None
+        
+    
+    def clip_existing_video(self, input_path, clip_name, start_time, end_time):
+        """Create a new video clip from an existing MP4 file.
+        
+        Parameters:
+            input_path (str): Path to the source MP4 file
+            clip_name (str): Name for the output clip (without .mp4)
+            start_time (float or str): Start time in seconds or "HH:MM:SS"
+            end_time (float or str): End time in seconds or "HH:MM:SS"
+        
+        Returns:
+            str: Path to the created clip
+        """
+        if not os.path.exists(input_path):
+            raise FileNotFoundError(f"Input video not found: {input_path}")
+
+        # Ensure download path exists
+        if not os.path.exists(self.download_path):
+            os.makedirs(self.download_path)
+
+        output_path = os.path.join(self.download_path, f"{clip_name}.mp4")
+
+        # ffmpeg command: -ss before -i is faster but less accurate for non-keyframe start
+        command = [
+            "ffmpeg",
+            "-i", input_path,
+            "-ss", str(start_time),
+            "-to", str(end_time),
+            "-c", "copy",  # avoid re-encoding for speed
+            "-y",          # overwrite if exists
+            output_path
+        ]
+
+        try:
+            print(f"Creating clip: {output_path}")
+            subprocess.run(command, check=True)
+            print(f"Clip created successfully: {output_path}")
+            return output_path
+        except subprocess.CalledProcessError as e:
+            print(f"Error creating clip: {e}")
+            return None
 
 
     def split_video_into_segments(self, video_filepath, segment_filename, duration):
