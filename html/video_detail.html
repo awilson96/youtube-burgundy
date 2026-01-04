@@ -81,13 +81,15 @@
         color: black;
     }
 
-    .menu-button {
+    .menu-button, select.menu-button {
         display: block;
         width: 80%;          
         max-width: 300px;
-        padding: 15px;
+        height: 54px;           /* same as Playlist Viewer */
+        padding: 0 15px;
         margin: 10px auto;   
         font-size: 18px;
+        line-height: 54px;      /* vertically centers text */
         border: 1px solid white; 
         border-radius: 10px;
         background-color: #2c2c2c; 
@@ -95,24 +97,22 @@
         cursor: pointer;
         text-decoration: none;
         font-weight: bold;
-        transition: background-color 0.2s ease;
         text-align: center;
+        text-align-last: center;       /* centers selected text in dropdown */
+        -moz-text-align-last: center;  /* Firefox */
+        box-sizing: border-box;
+        -webkit-appearance: none;  
+        -moz-appearance: none;
+        appearance: none;
     }
-    .menu-button:hover {
+
+    .menu-button:hover, select.menu-button:hover {
         background-color: #444444; 
     }
 
-    @media (max-width: 500px) {
-        .container {
-            padding: 30px 15px;
-        }
-        h2 {
-            font-size: 1.5em;
-        }
-        .menu-button {
-            font-size: 16px;
-            padding: 12px;
-        }
+    select.menu-button option {
+        color: black;
+        text-align: center; /* centers the option text */
     }
 
     /* Toast styling */
@@ -160,7 +160,7 @@
 
     <!-- Replaced old button + dropdown with styled select like download page -->
     <form id="playlistForm">
-        <select id="playlist-dropdown" class="btn">
+        <select id="playlist-dropdown" class="menu-button">
             <option value="" disabled selected>Add to Playlist</option>
             {% for pl in playlists %}
                 <option value="{{ pl }}">{{ pl }}</option>
