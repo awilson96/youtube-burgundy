@@ -92,6 +92,65 @@ class YoutubeSegmentDownloader:
         except subprocess.CalledProcessError as e:
             print(f"Error creating clip: {e}")
             return None
+        
+
+    def combine_videos(self, video_filepaths, output_filename, delete_sources=False):
+        if not video_filepaths:
+            print("No video files provided.")
+            return None
+
+        for path in video_filepaths:
+            if not os.path.exists(path):
+                print(f"File not found: {path}")
+                return None
+
+        output_filepath = os.path.join(self.download_path, f"{output_filename}.mp4")
+        os.makedirs(os.path.dirname(output_filepath), exist_ok=True)
+
+        # Build input args
+        inputs = []
+        for path in video_filepaths:
+            inputs.extend(["-i", path])
+
+        # Build filter_complex dynamically
+        filter_parts = []
+        for i in range(len(video_filepaths)):
+            filter_parts.append(f"[{i}:v]fps=25,scale=640:360[v{i}];")
+        video_labels = "".join(f"[v{i}][{i}:a]" for i in range(len(video_filepaths)))
+        filter_complex = "".join(filter_parts) + f"{video_labels}concat=n={len(video_filepaths)}:v=1:a=1[v][a]"
+
+        command = [
+            "ffmpeg",
+            *inputs,
+            "-filter_complex", filter_complex,
+            "-map", "[v]",
+            "-map", "[a]",
+            "-c:v", "libx264",
+            "-crf", "18",
+            "-preset", "fast",
+            "-c:a", "aac",
+            "-b:a", "192k",
+            "-y",
+            output_filepath
+        ]
+
+        try:
+            subprocess.run(command, check=True)
+            print(f"Combined video saved as: {output_filepath}")
+
+            if delete_sources:
+                for path in video_filepaths:
+                    try:
+                        os.remove(path)
+                        print(f"Deleted source file: {path}")
+                    except Exception as e:
+                        print(f"Failed to delete {path}: {e}")
+
+            return output_filepath
+
+        except subprocess.CalledProcessError as e:
+            print(f"Error combining videos: {e}")
+            return None
 
 
     def split_video_into_segments(self, video_filepath, segment_filename, duration):
@@ -139,6 +198,9 @@ class YoutubeSegmentDownloader:
 if __name__ == "__main__":
     # Initialize the downloader class
     downloader = YoutubeSegmentDownloader()
+
+    # downloader.combine_videos(["D:\\Music\\Departure - Moody Blues.mp4", "D:\\Music\\Ride my seesaw - Moody Blues.mp4"], "Departure and Ride my seesaw - Moody Blues", delete_sources=True)
+    # downloader.clip_existing_video(input_path="D:\\Music\\Legend of A Mind - Moody Blues.mp4", clip_name="Flute solo - Legend of A Mind - Moody Blues", start_time="00:02:42", end_time="00:04:36")
 
     # Prompt user for YouTube link and file name
     video_url = input("Enter the YouTube link: ").strip()
