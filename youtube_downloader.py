@@ -67,11 +67,13 @@ class YoutubeSegmentDownloader:
         if not os.path.exists(input_path):
             raise FileNotFoundError(f"Input video not found: {input_path}")
 
-        # Ensure download path exists
-        if not os.path.exists(self.download_path):
-            os.makedirs(self.download_path)
+        # Determine Clips folder one level above download_path
+        parent_dir = os.path.dirname(self.download_path)
+        clips_dir = os.path.join(parent_dir, "Clips")
+        os.makedirs(clips_dir, exist_ok=True)
 
-        output_path = os.path.join(self.download_path, f"{clip_name}.mp4")
+        # Set output path in Clips folder
+        output_path = os.path.join(clips_dir, f"{clip_name}.mp4")
 
         # ffmpeg command: -ss before -i is faster but less accurate for non-keyframe start
         command = [
@@ -200,7 +202,7 @@ if __name__ == "__main__":
     downloader = YoutubeSegmentDownloader()
 
     # downloader.combine_videos(["D:\\Music\\Departure - Moody Blues.mp4", "D:\\Music\\Ride my seesaw - Moody Blues.mp4"], "Departure and Ride my seesaw - Moody Blues", delete_sources=True)
-    # downloader.clip_existing_video(input_path="D:\\Music\\Legend of A Mind - Moody Blues.mp4", clip_name="Flute solo - Legend of A Mind - Moody Blues", start_time="00:02:42", end_time="00:04:36")
+    # downloader.clip_existing_video(input_path="D:\\Music\\House of four doors - Moody Blues.mp4", clip_name="Intro - House of four doors - Moody Blues", start_time="00:00:00", end_time="00:01:12")
 
     # Prompt user for YouTube link and file name
     video_url = input("Enter the YouTube link: ").strip()
