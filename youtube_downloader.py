@@ -25,6 +25,30 @@ class YoutubeSegmentDownloader:
             result = ydl.extract_info(video_url, download=False)
             return result['duration']  # Returns duration in seconds
 
+    def download_video_to_path(self, video_url, output_path):
+        """Download a mobile-friendly MP4 to an explicit output path."""
+        output_dir = os.path.dirname(output_path)
+        if output_dir and not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+        ydl_opts = {
+            'format': '18',  # format 18 = 360p H.264 + AAC MP4 (guaranteed iOS-friendly)
+            'outtmpl': output_path,
+            'noplaylist': True,
+            'quiet': False,
+            'merge_output_format': 'mp4'
+        }
+
+        try:
+            print(f"Downloading test video to: {output_path}")
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([video_url])
+            print("Download complete!")
+            return output_path
+        except Exception as e:
+            print(f"Download failed: {e}")
+            return None
+
     def download_video(self, video_url, segment_filename):
         """Download a mobile-friendly test video: H.264 + AAC in MP4."""
         # Ensure download path exists
@@ -32,25 +56,8 @@ class YoutubeSegmentDownloader:
             os.makedirs(self.download_path)
 
         video_filepath = os.path.join(self.download_path, f"{segment_filename}.mp4")
+        return self.download_video_to_path(video_url, video_filepath)
 
-        ydl_opts = {
-            'format': '18',  # format 18 = 360p H.264 + AAC MP4 (guaranteed iOS-friendly)
-            'outtmpl': video_filepath,
-            'noplaylist': True,
-            'quiet': False,
-            'merge_output_format': 'mp4'
-        }
-
-        try:
-            print(f"Downloading test video to: {video_filepath}")
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([video_url])
-            print("Download complete!")
-            return video_filepath
-        except Exception as e:
-            print(f"Download failed: {e}")
-            return None
-        
     
     def clip_existing_video(self, input_path, clip_name, start_time, end_time):
         """Create a new video clip from an existing MP4 file.

@@ -1,13 +1,15 @@
-from fastapi import FastAPI, Form, Request
+from fastapi import BackgroundTasks, FastAPI, Form, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 
 from youtube_downloader import YoutubeSegmentDownloader
 import os
 import json
 import random
 import asyncio
+import shutil
+import tempfile
 
 app = FastAPI()
 
@@ -80,6 +82,53 @@ async def download_video_api(link: str = Form(...), filename: str = Form(...)):
             return JSONResponse({"success": False, "message": "Download failed."})
     except Exception as e:
         return JSONResponse({"success": False, "message": str(e)})
+
+
+def cleanup_temp_download(temp_dir: str):
+    """Remove a temporary download directory after the response is sent."""
+    try:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+    except Exception as e:
+        print(f"Temporary download cleanup failed: {e}")
+
+
+@app.post("/api/download_to_device")
+async def download_video_to_device(
+    background_tasks: BackgroundTasks,
+    link: str = Form(...),
+    filename: str = Form(...)
+):
+    safe_filename = os.path.basename(filename).strip()
+    if not safe_filename:
+        return JSONResponse({"success": False, "message": "File name required"}, status_code=400)
+
+    if not safe_filename.lower().endswith(".mp4"):
+        safe_filename = f"{safe_filename}.mp4"
+
+    temp_dir = tempfile.mkdtemp(prefix="youtube_burgundy_", dir=tempfile.gettempdir())
+    temp_output_path = os.path.join(temp_dir, safe_filename)
+
+    try:
+        downloaded_file = await asyncio.to_thread(
+            downloader.download_video_to_path,
+            link,
+            temp_output_path
+        )
+
+        if not downloaded_file or not os.path.exists(downloaded_file):
+            cleanup_temp_download(temp_dir)
+            return JSONResponse({"success": False, "message": "Download failed."}, status_code=500)
+
+        background_tasks.add_task(cleanup_temp_download, temp_dir)
+        return FileResponse(
+            path=downloaded_file,
+            media_type="video/mp4",
+            filename=safe_filename,
+            background=background_tasks
+        )
+    except Exception as e:
+        cleanup_temp_download(temp_dir)
+        return JSONResponse({"success": False, "message": str(e)}, status_code=500)
 
 
 @app.post("/api/delete_file")

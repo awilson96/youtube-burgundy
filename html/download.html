@@ -173,6 +173,11 @@
             Download
             <div class="spinner" id="spinner"></div>
         </button>
+
+        <button type="button" id="deviceDownloadButton" class="btn">
+            Download to Device
+            <div class="spinner" id="device-spinner"></div>
+        </button>
     </form>
 
 
@@ -185,8 +190,10 @@
 <script>
 const toast = document.getElementById('toast');
 const spinner = document.getElementById('spinner');
+const deviceSpinner = document.getElementById('device-spinner');
 const form = document.getElementById('downloadForm');
 const submitButton = form.querySelector('button[type="submit"]');
+const deviceDownloadButton = document.getElementById('deviceDownloadButton');
 const playlistDropdown = document.getElementById('playlist-dropdown');
 
 // Temporary set to store selected playlists
@@ -271,6 +278,51 @@ form.addEventListener('submit', function(e) {
         console.error(err);
         showToast("An error occurred during download.");
     });
+});
+
+deviceDownloadButton.addEventListener('click', () => {
+    const link = form.link.value.trim();
+    const filename = form.filename.value.trim();
+
+    if (!link) {
+        showToast("YouTube URL required");
+        return;
+    }
+
+    if (!filename) {
+        showToast("File name required");
+        return;
+    }
+
+    deviceSpinner.style.display = 'inline-block';
+    deviceDownloadButton.disabled = true;
+    showToast("Preparing device download...");
+
+    const tempForm = document.createElement('form');
+    tempForm.method = 'POST';
+    tempForm.action = '/api/download_to_device';
+    tempForm.style.display = 'none';
+
+    const linkInput = document.createElement('input');
+    linkInput.type = 'hidden';
+    linkInput.name = 'link';
+    linkInput.value = link;
+    tempForm.appendChild(linkInput);
+
+    const filenameInput = document.createElement('input');
+    filenameInput.type = 'hidden';
+    filenameInput.name = 'filename';
+    filenameInput.value = filename;
+    tempForm.appendChild(filenameInput);
+
+    document.body.appendChild(tempForm);
+    tempForm.submit();
+    tempForm.remove();
+
+    setTimeout(() => {
+        deviceSpinner.style.display = 'none';
+        deviceDownloadButton.disabled = false;
+    }, 4000);
 });
 </script>
 </body>
