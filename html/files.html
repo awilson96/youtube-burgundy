@@ -101,6 +101,40 @@
     }
     .btn:hover { background-color: #444444; }
 
+    .menu-button, select.menu-button {
+        display: block;
+        width: calc(100%);
+        max-width: none;
+        height: 48px;
+        padding: 0 12px;
+        margin: 10px auto 0 auto;
+        font-size: 16px;
+        line-height: 48px;
+        border: 1px solid white;
+        border-radius: 10px;
+        background-color: #2c2c2c;
+        color: white;
+        cursor: pointer;
+        text-decoration: none;
+        font-weight: bold;
+        text-align: center;
+        text-align-last: center;
+        -moz-text-align-last: center;
+        box-sizing: border-box;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+    }
+
+    .menu-button:hover, select.menu-button:hover {
+        background-color: #444444;
+    }
+
+    select.menu-button option {
+        color: black;
+        text-align: center;
+    }
+
     /* Toast styling */
     .toast {
         position: fixed; 
@@ -154,6 +188,12 @@
         </table>
     </div>
 
+    <select id="play-all-dropdown" class="menu-button">
+        <option value="" disabled selected>Play All</option>
+        <option value="in_order">In order</option>
+        <option value="shuffle">Shuffle</option>
+    </select>
+
     <a href="/download" class="btn">Back to Download Page</a>
     <a href="/" class="btn">Home</a>
 
@@ -162,6 +202,7 @@
 
 <script>
 const toast = document.getElementById('toast');
+const playAllDropdown = document.getElementById('play-all-dropdown');
 
 function showToast(message) {
     toast.textContent = message;
@@ -204,6 +245,37 @@ function deleteFile(event, filename) {
         showToast("An error occurred while deleting the file.");
     });
 }
+
+playAllDropdown.addEventListener('change', () => {
+    const mode = playAllDropdown.value;
+    if (!mode) {
+        return;
+    }
+
+    fetch(`/api/media_queue?mode=${encodeURIComponent(mode)}`)
+    .then(resp => resp.json())
+    .then(data => {
+        if (!data.success) {
+            showToast(data.message || "Unable to build media queue.");
+            playAllDropdown.selectedIndex = 0;
+            return;
+        }
+
+        if (!data.songs || data.songs.length === 0) {
+            showToast("No media available to play.");
+            playAllDropdown.selectedIndex = 0;
+            return;
+        }
+
+        const firstVideo = data.songs[0];
+        window.location.href = `/video/${encodeURIComponent(firstVideo)}?queue=${encodeURIComponent(JSON.stringify(data.songs))}`;
+    })
+    .catch(err => {
+        console.error(err);
+        showToast("Unable to start playback.");
+        playAllDropdown.selectedIndex = 0;
+    });
+});
 </script>
 </body>
 </html>

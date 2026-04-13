@@ -165,6 +165,20 @@ def files_page(request: Request, query: str = ""):
     })
 
 
+@app.get("/api/media_queue")
+def get_media_queue(mode: str = "in_order"):
+    """Return media filenames in displayed or shuffled order."""
+    files = os.listdir(DOWNLOAD_FOLDER)
+
+    if mode == "shuffle":
+        files = files.copy()
+        random.shuffle(files)
+    elif mode != "in_order":
+        return JSONResponse({"success": False, "message": "Invalid mode"}, status_code=400)
+
+    return JSONResponse({"success": True, "songs": files})
+
+
 @app.get("/video/{filename}", response_class=HTMLResponse)
 def video_page(request: Request, filename: str):
 
