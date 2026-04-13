@@ -171,22 +171,22 @@
 <body>
 <div class="container">
 
-    <h2>{{ filename }}</h2>
+    <h2 id="video-title">{{ filename }}</h2>
 
-    {% if file_playlists and file_playlists|length > 0 %}
-    <div class="belongs">
+    <div class="belongs" id="belongs-container" {% if not file_playlists or file_playlists|length == 0 %}style="display: none;"{% endif %}>
         Belongs to:
+        <span id="belongs-links">
         {% for pl in file_playlists %}
-            <a href="http://10.0.0.1:8000/playlist/details?name={{ pl | urlencode }}">{{ pl }}</a>
+            <a href="/playlist/details?name={{ pl | urlencode }}">{{ pl }}</a>
         {% endfor %}
+        </span>
     </div>
-    {% endif %}
 
     <!-- Duration display -->
     <div class="duration" id="video-duration">Duration: Loading...</div>
 
     <video id="player" controls playsinline webkit-playsinline autoplay>
-        <source src="http://10.0.0.1:8080/video/{{ filename | urlencode }}" type="video/mp4">
+        <source id="player-source" src="http://10.0.0.1:8080/video/{{ filename | urlencode }}" type="video/mp4">
         Your browser does not support HTML5 video.
     </video>
 
@@ -214,9 +214,16 @@
 <script>
 const dropdown = document.getElementById('playlist-dropdown');
 const player = document.getElementById('player');
+const playerSource = document.getElementById('player-source');
 const durationDiv = document.getElementById('video-duration');
 const previousButton = document.getElementById('previous-button');
 const nextButton = document.getElementById('next-button');
+const titleElement = document.getElementById('video-title');
+const belongsContainer = document.getElementById('belongs-container');
+const belongsLinks = document.getElementById('belongs-links');
+
+let currentFile = "{{ filename }}";
+let autoplayOnLoad = false;
 
 dropdown.onchange = () => {
     const playlist = dropdown.value;
@@ -224,7 +231,7 @@ dropdown.onchange = () => {
     fetch("/playlist/add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ playlist: playlist, file: "{{ filename }}" })
+        body: JSON.stringify({ playlist: playlist, file: currentFile })
     })
     .then(resp => resp.json())
     .then(data => {
@@ -258,22 +265,94 @@ let queueIndex = 0;
 
 const urlParams = new URLSearchParams(window.location.search);
 const queueParam = urlParams.get('queue');
-const shouldAutoplay = urlParams.get('autoplay') === '1';
+autoplayOnLoad = urlParams.get('autoplay') === '1';
 if (queueParam) {
     try { videoQueue = JSON.parse(decodeURIComponent(queueParam)); } 
     catch(e) { console.error("Invalid queue", e); }
 }
 
 if (videoQueue.length > 0) {
-    const currentFile = "{{ filename }}";
     const idx = videoQueue.indexOf(currentFile);
     queueIndex = idx >= 0 ? idx : 0;
 }
 
-function navigateQueue(targetIndex) {
+function buildVideoUrl(filename, shouldAutoplay) {
+    let url = `/video/${encodeURIComponent(filename)}`;
+    if (videoQueue.length > 0) {
+        url += `?queue=${encodeURIComponent(JSON.stringify(videoQueue))}`;
+        if (shouldAutoplay) {
+            url += "&autoplay=1";
+        }
+    } else if (shouldAutoplay) {
+        url += "?autoplay=1";
+    }
+    return url;
+}
+
+function renderPlaylistLinks(playlists) {
+    belongsLinks.innerHTML = "";
+
+    if (!playlists || playlists.length === 0) {
+        belongsContainer.style.display = "none";
+        return;
+    }
+
+    belongsContainer.style.display = "block";
+    playlists.forEach((playlist, index) => {
+        if (index > 0) {
+            belongsLinks.appendChild(document.createTextNode(" "));
+        }
+
+        const link = document.createElement("a");
+        link.href = `/playlist/details?name=${encodeURIComponent(playlist)}`;
+        link.textContent = playlist;
+        belongsLinks.appendChild(link);
+    });
+}
+
+async function loadVideo(filename, shouldAutoplay, pushHistory = true) {
+    try {
+        const response = await fetch(`/api/video_metadata/${encodeURIComponent(filename)}`);
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            showToast(data.message || "Unable to load video.");
+            return;
+        }
+
+        currentFile = data.filename;
+        autoplayOnLoad = shouldAutoplay;
+        const nextIndex = videoQueue.indexOf(currentFile);
+        queueIndex = nextIndex >= 0 ? nextIndex : queueIndex;
+
+        titleElement.textContent = currentFile;
+        document.title = `Watch Video - ${currentFile}`;
+        durationDiv.textContent = "Duration: Loading...";
+        renderPlaylistLinks(data.file_playlists || []);
+
+        player.pause();
+        playerSource.src = `http://10.0.0.1:8080/video/${encodeURIComponent(currentFile)}`;
+        player.load();
+
+        if (pushHistory) {
+            window.history.pushState(
+                { filename: currentFile, queue: videoQueue, autoplay: shouldAutoplay },
+                "",
+                buildVideoUrl(currentFile, shouldAutoplay)
+            );
+        }
+
+        updateQueueButtons();
+    } catch (error) {
+        console.error(error);
+        showToast("Unable to load video.");
+    }
+}
+
+function navigateQueue(targetIndex, shouldAutoplay = true) {
     if (targetIndex < 0 || targetIndex >= videoQueue.length) return;
     const targetVideo = videoQueue[targetIndex];
-    window.location.href = `/video/${encodeURIComponent(targetVideo)}?queue=${encodeURIComponent(JSON.stringify(videoQueue))}&autoplay=1`;
+    loadVideo(targetVideo, shouldAutoplay);
 }
 
 function playNext() {
@@ -291,7 +370,8 @@ function updateQueueButtons() {
 }
 
 function tryAutoplay() {
-    if (!shouldAutoplay) return;
+    if (!autoplayOnLoad) return;
+    autoplayOnLoad = false;
     const playPromise = player.play();
     if (playPromise && typeof playPromise.catch === 'function') {
         playPromise.catch(() => {
@@ -303,7 +383,27 @@ function tryAutoplay() {
 previousButton.onclick = playPrevious;
 nextButton.onclick = playNext;
 updateQueueButtons();
-player.addEventListener('canplay', tryAutoplay, { once: true });
+player.addEventListener('canplay', tryAutoplay);
+
+window.addEventListener('popstate', (event) => {
+    const state = event.state;
+    if (!state || !state.filename) {
+        return;
+    }
+
+    videoQueue = Array.isArray(state.queue) ? state.queue : [];
+    currentFile = state.filename;
+    autoplayOnLoad = Boolean(state.autoplay);
+    const nextIndex = videoQueue.indexOf(currentFile);
+    queueIndex = nextIndex >= 0 ? nextIndex : 0;
+    loadVideo(currentFile, autoplayOnLoad, false);
+});
+
+window.history.replaceState(
+    { filename: currentFile, queue: videoQueue, autoplay: autoplayOnLoad },
+    "",
+    buildVideoUrl(currentFile, autoplayOnLoad)
+);
 
 player.onended = playNext;
 </script>

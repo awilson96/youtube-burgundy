@@ -196,6 +196,19 @@ def video_page(request: Request, filename: str):
     })
 
 
+@app.get("/api/video_metadata/{filename}")
+def video_metadata(filename: str):
+    file_path = os.path.join(DOWNLOAD_FOLDER, filename)
+    if not os.path.exists(file_path):
+        return JSONResponse({"success": False, "message": "File not found"}, status_code=404)
+
+    return JSONResponse({
+        "success": True,
+        "filename": filename,
+        "file_playlists": get_playlists_containing(filename),
+    })
+
+
 @app.get("/playlists", response_class=HTMLResponse)
 def playlist_viewer(request: Request):
     """Render playlist viewer page with list of playlists."""
