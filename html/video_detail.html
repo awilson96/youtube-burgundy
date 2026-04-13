@@ -55,6 +55,38 @@
         margin-bottom: 15px;
     }
 
+    .player-nav {
+        display: flex;
+        justify-content: center;
+        gap: 18px;
+        margin-bottom: 15px;
+    }
+
+    .nav-button {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        border: 1px solid white;
+        background-color: #2c2c2c;
+        color: white;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+    }
+
+    .nav-button:hover:not(:disabled) {
+        background-color: #444444;
+    }
+
+    .nav-button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+    }
+
     /* Download page button style applied to dropdown */
     .btn {
         display: flex;
@@ -158,6 +190,11 @@
         Your browser does not support HTML5 video.
     </video>
 
+    <div class="player-nav">
+        <button id="previous-button" class="nav-button" type="button" aria-label="Previous song">&laquo;</button>
+        <button id="next-button" class="nav-button" type="button" aria-label="Next song">&raquo;</button>
+    </div>
+
     <!-- Replaced old button + dropdown with styled select like download page -->
     <form id="playlistForm">
         <select id="playlist-dropdown" class="menu-button">
@@ -178,6 +215,8 @@
 const dropdown = document.getElementById('playlist-dropdown');
 const player = document.getElementById('player');
 const durationDiv = document.getElementById('video-duration');
+const previousButton = document.getElementById('previous-button');
+const nextButton = document.getElementById('next-button');
 
 dropdown.onchange = () => {
     const playlist = dropdown.value;
@@ -230,12 +269,29 @@ if (videoQueue.length > 0) {
     queueIndex = idx >= 0 ? idx : 0;
 }
 
-function playNext() {
-    queueIndex++;
-    if (queueIndex >= videoQueue.length) return;
-    const nextVideo = videoQueue[queueIndex];
-    window.location.href = `/video/${encodeURIComponent(nextVideo)}?queue=${encodeURIComponent(JSON.stringify(videoQueue))}`;
+function navigateQueue(targetIndex) {
+    if (targetIndex < 0 || targetIndex >= videoQueue.length) return;
+    const targetVideo = videoQueue[targetIndex];
+    window.location.href = `/video/${encodeURIComponent(targetVideo)}?queue=${encodeURIComponent(JSON.stringify(videoQueue))}`;
 }
+
+function playNext() {
+    navigateQueue(queueIndex + 1);
+}
+
+function playPrevious() {
+    navigateQueue(queueIndex - 1);
+}
+
+function updateQueueButtons() {
+    const hasQueue = videoQueue.length > 1;
+    previousButton.disabled = !hasQueue || queueIndex <= 0;
+    nextButton.disabled = !hasQueue || queueIndex >= videoQueue.length - 1;
+}
+
+previousButton.onclick = playPrevious;
+nextButton.onclick = playNext;
+updateQueueButtons();
 
 player.onended = playNext;
 </script>

@@ -170,6 +170,8 @@ function loadPlaylist(playlist) {
                 return;
             }
 
+            const playlistSongs = data.songs.slice();
+
             const table = document.createElement("table");
             const thead = document.createElement("thead");
             const headerRow = document.createElement("tr");
@@ -188,7 +190,9 @@ function loadPlaylist(playlist) {
                 const artist = nameParts[1] || '';
 
                 const tr = document.createElement("tr");
-                tr.onclick = () => { videoQueue=[file]; queueIndex=0; playNextInQueue(); };
+                tr.onclick = () => {
+                    window.location.href = `/video/${encodeURIComponent(file)}?queue=${encodeURIComponent(JSON.stringify(playlistSongs))}`;
+                };
 
                 const tdSong = document.createElement("td"); tdSong.textContent=song;
                 const tdArtist = document.createElement("td"); tdArtist.textContent=artist;
