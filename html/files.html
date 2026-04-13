@@ -268,7 +268,7 @@ playAllDropdown.addEventListener('change', () => {
         }
 
         const firstVideo = data.songs[0];
-        window.location.href = `/video/${encodeURIComponent(firstVideo)}?queue=${encodeURIComponent(JSON.stringify(data.songs))}`;
+        window.location.href = `/video/${encodeURIComponent(firstVideo)}?queue=${encodeURIComponent(JSON.stringify(data.songs))}&autoplay=1`;
     })
     .catch(err => {
         console.error(err);

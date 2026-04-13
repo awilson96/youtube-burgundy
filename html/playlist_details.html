@@ -156,7 +156,7 @@ function playNextInQueue() {
     }
     const nextVideo = videoQueue[queueIndex];
     queueIndex++;
-    window.location.href = `/video/${encodeURIComponent(nextVideo)}?queue=${encodeURIComponent(JSON.stringify(videoQueue))}`;
+    window.location.href = `/video/${encodeURIComponent(nextVideo)}?queue=${encodeURIComponent(JSON.stringify(videoQueue))}&autoplay=1`;
 }
 
 // ----- Load playlist table -----
@@ -191,7 +191,7 @@ function loadPlaylist(playlist) {
 
                 const tr = document.createElement("tr");
                 tr.onclick = () => {
-                    window.location.href = `/video/${encodeURIComponent(file)}?queue=${encodeURIComponent(JSON.stringify(playlistSongs))}`;
+                    window.location.href = `/video/${encodeURIComponent(file)}?queue=${encodeURIComponent(JSON.stringify(playlistSongs))}&autoplay=1`;
                 };
 
                 const tdSong = document.createElement("td"); tdSong.textContent=song;

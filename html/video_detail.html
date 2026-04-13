@@ -185,7 +185,7 @@
     <!-- Duration display -->
     <div class="duration" id="video-duration">Duration: Loading...</div>
 
-    <video id="player" controls playsinline webkit-playsinline>
+    <video id="player" controls playsinline webkit-playsinline autoplay>
         <source src="http://10.0.0.1:8080/video/{{ filename | urlencode }}" type="video/mp4">
         Your browser does not support HTML5 video.
     </video>
@@ -258,6 +258,7 @@ let queueIndex = 0;
 
 const urlParams = new URLSearchParams(window.location.search);
 const queueParam = urlParams.get('queue');
+const shouldAutoplay = urlParams.get('autoplay') === '1';
 if (queueParam) {
     try { videoQueue = JSON.parse(decodeURIComponent(queueParam)); } 
     catch(e) { console.error("Invalid queue", e); }
@@ -272,7 +273,7 @@ if (videoQueue.length > 0) {
 function navigateQueue(targetIndex) {
     if (targetIndex < 0 || targetIndex >= videoQueue.length) return;
     const targetVideo = videoQueue[targetIndex];
-    window.location.href = `/video/${encodeURIComponent(targetVideo)}?queue=${encodeURIComponent(JSON.stringify(videoQueue))}`;
+    window.location.href = `/video/${encodeURIComponent(targetVideo)}?queue=${encodeURIComponent(JSON.stringify(videoQueue))}&autoplay=1`;
 }
 
 function playNext() {
@@ -289,9 +290,20 @@ function updateQueueButtons() {
     nextButton.disabled = !hasQueue || queueIndex >= videoQueue.length - 1;
 }
 
+function tryAutoplay() {
+    if (!shouldAutoplay) return;
+    const playPromise = player.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(() => {
+            showToast("Autoplay was blocked. Tap play to continue.");
+        });
+    }
+}
+
 previousButton.onclick = playPrevious;
 nextButton.onclick = playNext;
 updateQueueButtons();
+player.addEventListener('canplay', tryAutoplay, { once: true });
 
 player.onended = playNext;
 </script>
