@@ -374,9 +374,7 @@ function tryAutoplay() {
     autoplayOnLoad = false;
     const playPromise = player.play();
     if (playPromise && typeof playPromise.catch === 'function') {
-        playPromise.catch(() => {
-            showToast("Autoplay was blocked. Tap play to continue.");
-        });
+        playPromise.catch(() => {});
     }
 }
 
