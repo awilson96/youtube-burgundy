@@ -74,33 +74,37 @@ class YoutubeSegmentDownloader:
         if not os.path.exists(input_path):
             raise FileNotFoundError(f"Input video not found: {input_path}")
 
-        # Determine Clips folder one level above download_path
-        parent_dir = os.path.dirname(self.download_path)
-        clips_dir = os.path.join(parent_dir, "Clips")
-        os.makedirs(clips_dir, exist_ok=True)
+        os.makedirs(self.download_path, exist_ok=True)
+        output_path = os.path.join(self.download_path, f"{clip_name}.mp4")
+        duration = float(end_time) - float(start_time)
 
-        # Set output path in Clips folder
-        output_path = os.path.join(clips_dir, f"{clip_name}.mp4")
+        if duration <= 0:
+            raise ValueError("Clip end time must be after start time.")
 
-        # ffmpeg command: -ss before -i is faster but less accurate for non-keyframe start
         command = [
             "ffmpeg",
-            "-i", input_path,
             "-ss", str(start_time),
-            "-to", str(end_time),
-            "-c", "copy",  # avoid re-encoding for speed
+            "-i", input_path,
+            "-t", str(duration),
+            "-c:v", "libx264",
+            "-preset", "veryfast",
+            "-crf", "18",
+            "-c:a", "aac",
+            "-b:a", "192k",
+            "-movflags", "+faststart",
             "-y",          # overwrite if exists
             output_path
         ]
 
         try:
-            print(f"Creating clip: {output_path}")
-            subprocess.run(command, check=True)
+            print(f"Creating clip: {output_path} ({start_time}s to {end_time}s, duration {duration}s)")
+            subprocess.run(command, check=True, capture_output=True, text=True)
             print(f"Clip created successfully: {output_path}")
             return output_path
         except subprocess.CalledProcessError as e:
-            print(f"Error creating clip: {e}")
-            return None
+            error_message = e.stderr.strip() if e.stderr else str(e)
+            print(f"Error creating clip: {error_message}")
+            raise RuntimeError(error_message)
         
 
     def combine_videos(self, video_filepaths, output_filename, delete_sources=False):

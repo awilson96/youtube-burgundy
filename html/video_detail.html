@@ -87,6 +87,79 @@
         cursor: not-allowed;
     }
 
+    .clip-panel {
+        width: 80%;
+        max-width: 300px;
+        margin: 0 auto 12px;
+        padding: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.55);
+        border-radius: 8px;
+        box-sizing: border-box;
+        background-color: rgba(0, 0, 0, 0.16);
+    }
+
+    .clip-title {
+        margin: 0 0 10px;
+        font-size: 1rem;
+        font-weight: bold;
+    }
+
+    .clip-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+
+    .clip-field {
+        min-width: 0;
+    }
+
+    .clip-field label {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 0.78rem;
+        font-weight: bold;
+    }
+
+    .clip-field input {
+        width: 100%;
+        height: 38px;
+        padding: 0 8px;
+        border: 1px solid white;
+        border-radius: 8px;
+        box-sizing: border-box;
+        background-color: #f7f7f7;
+        color: #1c1c1c;
+        font-size: 15px;
+        text-align: center;
+    }
+
+    .clip-button {
+        width: 100%;
+        height: 40px;
+        border: 1px solid white;
+        border-radius: 8px;
+        background-color: #2c2c2c;
+        color: white;
+        font-size: 14px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .clip-button:hover:not(:disabled) {
+        background-color: #444444;
+    }
+
+    .clip-button:disabled {
+        opacity: 0.55;
+        cursor: wait;
+    }
+
+    .clip-create {
+        margin-top: 4px;
+    }
+
     /* Download page button style applied to dropdown */
     .btn {
         display: flex;
@@ -195,6 +268,25 @@
         <button id="next-button" class="nav-button" type="button" aria-label="Next song">&raquo;</button>
     </div>
 
+    <div class="clip-panel">
+        <p class="clip-title">Create Clip</p>
+        <div class="clip-row">
+            <div class="clip-field">
+                <label for="clip-start">Start (M:SS)</label>
+                <input id="clip-start" type="text" inputmode="decimal" value="0:00">
+            </div>
+            <div class="clip-field">
+                <label for="clip-end">End (M:SS)</label>
+                <input id="clip-end" type="text" inputmode="decimal" value="0:00">
+            </div>
+        </div>
+        <div class="clip-row">
+            <button id="set-start-button" class="clip-button" type="button">Set Start</button>
+            <button id="set-end-button" class="clip-button" type="button">Set End</button>
+        </div>
+        <button id="create-clip-button" class="clip-button clip-create" type="button">Create Clip</button>
+    </div>
+
     <!-- Replaced old button + dropdown with styled select like download page -->
     <form id="playlistForm">
         <select id="playlist-dropdown" class="menu-button">
@@ -221,6 +313,11 @@ const nextButton = document.getElementById('next-button');
 const titleElement = document.getElementById('video-title');
 const belongsContainer = document.getElementById('belongs-container');
 const belongsLinks = document.getElementById('belongs-links');
+const clipStartInput = document.getElementById('clip-start');
+const clipEndInput = document.getElementById('clip-end');
+const setStartButton = document.getElementById('set-start-button');
+const setEndButton = document.getElementById('set-end-button');
+const createClipButton = document.getElementById('create-clip-button');
 
 let currentFile = "{{ filename }}";
 let autoplayOnLoad = false;
@@ -257,6 +354,8 @@ player.onloadedmetadata = () => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60).toString().padStart(2, '0');
     durationDiv.textContent = `Duration: ${mins}:${secs}`;
+    clipStartInput.value = formatClipTime(0);
+    clipEndInput.value = formatClipTime(seconds);
 };
 
 // --- QUEUE FUNCTIONALITY ---
@@ -328,6 +427,8 @@ async function loadVideo(filename, shouldAutoplay, pushHistory = true) {
         titleElement.textContent = currentFile;
         document.title = `Watch Video - ${currentFile}`;
         durationDiv.textContent = "Duration: Loading...";
+        clipStartInput.value = "0:00";
+        clipEndInput.value = "0:00";
         renderPlaylistLinks(data.file_playlists || []);
 
         player.pause();
@@ -382,6 +483,103 @@ previousButton.onclick = playPrevious;
 nextButton.onclick = playNext;
 updateQueueButtons();
 player.addEventListener('canplay', tryAutoplay);
+
+function formatClipTime(totalSeconds) {
+    if (!Number.isFinite(totalSeconds) || totalSeconds < 0) {
+        return "0:00";
+    }
+
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds - (minutes * 60);
+    const hasDecimal = Math.round(seconds * 10) % 10 !== 0;
+    const secondsText = hasDecimal ? seconds.toFixed(1).padStart(4, "0") : Math.floor(seconds).toString().padStart(2, "0");
+    return `${minutes}:${secondsText}`;
+}
+
+function getClipTime(input) {
+    const value = input.value.trim();
+    if (!value) {
+        return NaN;
+    }
+
+    const parts = value.split(":");
+    if (parts.length === 1) {
+        const secondsOnly = Number.parseFloat(parts[0]);
+        return Number.isFinite(secondsOnly) ? secondsOnly : NaN;
+    }
+
+    if (parts.length !== 2) {
+        return NaN;
+    }
+
+    const minutes = Number.parseInt(parts[0], 10);
+    const seconds = Number.parseFloat(parts[1]);
+    if (!Number.isFinite(minutes) || !Number.isFinite(seconds) || minutes < 0 || seconds < 0 || seconds >= 60) {
+        return NaN;
+    }
+
+    return (minutes * 60) + seconds;
+}
+
+function getDefaultClipName(startTime, endTime) {
+    const baseName = currentFile.replace(/\.[^/.]+$/, "");
+    return `${baseName} clip`;
+}
+
+setStartButton.onclick = () => {
+    clipStartInput.value = formatClipTime(player.currentTime);
+    if (getClipTime(clipEndInput) <= getClipTime(clipStartInput)) {
+        clipEndInput.value = formatClipTime(Math.min(player.duration || player.currentTime, player.currentTime + 10));
+    }
+};
+
+setEndButton.onclick = () => {
+    clipEndInput.value = formatClipTime(player.currentTime);
+};
+
+createClipButton.onclick = async () => {
+    const startTime = getClipTime(clipStartInput);
+    const endTime = getClipTime(clipEndInput);
+
+    if (!Number.isFinite(startTime) || !Number.isFinite(endTime) || endTime <= startTime) {
+        showToast("Choose a valid clip range.");
+        return;
+    }
+
+    if (player.duration && endTime > player.duration) {
+        showToast("Clip end is past the video duration.");
+        return;
+    }
+
+    const clipName = window.prompt("Name this clip", getDefaultClipName(startTime, endTime));
+    if (!clipName || !clipName.trim()) {
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("filename", currentFile);
+    formData.append("clip_name", clipName.trim());
+    formData.append("start_time", startTime.toString());
+    formData.append("end_time", endTime.toString());
+
+    createClipButton.disabled = true;
+    createClipButton.textContent = "Creating...";
+
+    try {
+        const response = await fetch("/api/clip_video", {
+            method: "POST",
+            body: formData
+        });
+        const data = await response.json();
+        showToast(data.message || (data.success ? "Clip created." : "Clip creation failed."));
+    } catch (error) {
+        console.error(error);
+        showToast("Clip creation failed.");
+    } finally {
+        createClipButton.disabled = false;
+        createClipButton.textContent = "Create Clip";
+    }
+};
 
 window.addEventListener('popstate', (event) => {
     const state = event.state;

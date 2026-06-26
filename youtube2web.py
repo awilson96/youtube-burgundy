@@ -10,6 +10,7 @@ import random
 import asyncio
 import shutil
 import tempfile
+import re
 
 app = FastAPI()
 
@@ -51,6 +52,13 @@ def get_playlists_containing(filename: str):
             print("Playlist read error:", e)
 
     return matches
+
+
+def sanitize_clip_name(name: str):
+    """Return a filesystem-safe clip name without an extension."""
+    clip_name = os.path.splitext(os.path.basename(name.strip()))[0]
+    clip_name = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "", clip_name).strip()
+    return clip_name
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -207,6 +215,56 @@ def video_metadata(filename: str):
         "filename": filename,
         "file_playlists": get_playlists_containing(filename),
     })
+
+
+@app.post("/api/clip_video")
+async def clip_video_api(
+    filename: str = Form(...),
+    clip_name: str = Form(...),
+    start_time: float = Form(...),
+    end_time: float = Form(...)
+):
+    source_filename = os.path.basename(filename)
+    source_path = os.path.abspath(os.path.join(DOWNLOAD_FOLDER, source_filename))
+    download_root = os.path.abspath(DOWNLOAD_FOLDER)
+
+    if not source_path.startswith(download_root + os.sep) and source_path != download_root:
+        return JSONResponse({"success": False, "message": "Invalid source file."}, status_code=400)
+
+    if not os.path.exists(source_path):
+        return JSONResponse({"success": False, "message": "Source video not found."}, status_code=404)
+
+    safe_clip_name = sanitize_clip_name(clip_name)
+    if not safe_clip_name:
+        return JSONResponse({"success": False, "message": "Clip name required."}, status_code=400)
+
+    output_filename = f"{safe_clip_name}.mp4"
+    if output_filename.lower() == source_filename.lower():
+        return JSONResponse({"success": False, "message": "Clip name must be different from the source video."}, status_code=400)
+
+    if start_time < 0 or end_time <= start_time:
+        return JSONResponse({"success": False, "message": "Choose a valid clip range."}, status_code=400)
+
+    try:
+        output_path = await asyncio.to_thread(
+            downloader.clip_existing_video,
+            source_path,
+            safe_clip_name,
+            start_time,
+            end_time
+        )
+
+        if not output_path or not os.path.exists(output_path):
+            return JSONResponse({"success": False, "message": "Clip creation failed."}, status_code=500)
+
+        return JSONResponse({
+            "success": True,
+            "message": f"Clip created: {os.path.basename(output_path)}",
+            "filename": os.path.basename(output_path),
+            "path": output_path
+        })
+    except Exception as e:
+        return JSONResponse({"success": False, "message": str(e)}, status_code=500)
 
 
 @app.get("/playlists", response_class=HTMLResponse)
